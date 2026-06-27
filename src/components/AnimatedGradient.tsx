@@ -1,11 +1,12 @@
 import type { ReactNode } from "react";
 
-type Theme = "passenger" | "owner" | "advertiser" | "brand";
+type Theme = "passenger" | "owner" | "advertiser" | "auditor" | "brand";
 
 const themes: Record<Theme, string> = {
   passenger: "from-violet-700 via-fuchsia-700 to-indigo-800",
   advertiser: "from-purple-700 via-pink-700 to-violet-900",
   owner: "from-orange-600 via-amber-600 to-rose-700",
+  auditor: "from-emerald-700 via-teal-700 to-cyan-800",
   brand: "from-indigo-800 via-violet-800 to-fuchsia-800",
 };
 

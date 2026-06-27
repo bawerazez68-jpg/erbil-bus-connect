@@ -49,15 +49,15 @@ function LoginPage() {
 
 export function RoleTabs({ role, setRole }: { role: Role; setRole: (r: Role) => void }) {
   const { t } = useI18n();
-  const roles: Role[] = ["passenger", "owner", "advertiser"];
+  const roles: Role[] = ["passenger", "owner", "advertiser", "auditor"];
   return (
-    <div className="grid grid-cols-3 gap-2 p-1 rounded-xl bg-white/10 border border-white/20">
+    <div className="grid grid-cols-4 gap-2 p-1 rounded-xl bg-white/10 border border-white/20">
       {roles.map((r) => (
         <button
           type="button"
           key={r}
           onClick={() => setRole(r)}
-          className={`py-2 text-xs font-medium rounded-lg transition ${
+          className={`py-2 text-[11px] font-medium rounded-lg transition ${
             role === r ? "bg-white text-slate-900" : "text-white/80 hover:text-white"
           }`}
         >

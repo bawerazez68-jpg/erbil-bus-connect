@@ -92,3 +92,22 @@ export const CAMPAIGNS: Campaign[] = [
 export function interpolate(a: [number, number], b: [number, number], t: number): [number, number] {
   return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
 }
+
+export type AuditAlert = {
+  id: string;
+  busId: string;
+  routeId: string;
+  type: "deviation" | "ghost" | "speed" | "stop";
+  severity: "low" | "medium" | "high";
+  status: "open" | "cleared";
+  note: string;
+  minutesAgo: number;
+};
+
+export const AUDIT_ALERTS: AuditAlert[] = [
+  { id: "a1", busId: "B-101", routeId: "kasnazan", type: "deviation", severity: "high", status: "open", note: "Detoured 800m off Kasnazan corridor", minutesAgo: 3 },
+  { id: "a2", busId: "B-103", routeId: "qoshtapa", type: "ghost", severity: "medium", status: "open", note: "5 riders boarded without ticket scan", minutesAgo: 11 },
+  { id: "a3", busId: "B-100", routeId: "ankawa", type: "speed", severity: "low", status: "open", note: "Over speed limit on 100m Rd", minutesAgo: 18 },
+  { id: "a4", busId: "B-104", routeId: "bahrka", type: "stop", severity: "medium", status: "cleared", note: "Skipped Bahrka stop #4", minutesAgo: 42 },
+  { id: "a5", busId: "B-106", routeId: "pirzen", type: "deviation", severity: "low", status: "cleared", note: "Brief detour, returned to route", minutesAgo: 65 },
+];
