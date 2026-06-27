@@ -1,0 +1,94 @@
+// Erbil center & Downtown Garage
+export const ERBIL_CENTER: [number, number] = [44.0094, 36.1911];
+export const DOWNTOWN_GARAGE: [number, number] = [44.0094, 36.1911];
+
+export type RouteDef = {
+  id: string;
+  name: string;
+  color: string;
+  // origin -> garage
+  origin: [number, number];
+};
+
+export const ROUTES: RouteDef[] = [
+  { id: "ankawa", name: "Ankawa", color: "#a855f7", origin: [43.9783, 36.2412] },
+  { id: "kasnazan", name: "Kasnazan", color: "#f97316", origin: [44.1320, 36.2050] },
+  { id: "bnaslawa", name: "Bnaslawa", color: "#06b6d4", origin: [44.0810, 36.1280] },
+  { id: "qoshtapa", name: "Qoshtapa", color: "#22c55e", origin: [43.9920, 36.0830] },
+  { id: "bahrka", name: "Bahrka", color: "#ec4899", origin: [43.8650, 36.2120] },
+  { id: "daratoo", name: "Daratoo", color: "#eab308", origin: [43.9450, 36.2470] },
+  { id: "pirzen", name: "Pirzen", color: "#3b82f6", origin: [44.0500, 36.2550] },
+];
+
+export type Bus = {
+  id: string;
+  routeId: string;
+  label: string;
+  seats: number;
+  taken: number;
+  // 0..1 progress from origin to garage
+  progress: number;
+  speed: number; // progress per tick
+  etaMin: number;
+};
+
+export const BUSES: Bus[] = ROUTES.map((r, i) => ({
+  id: `B-${100 + i}`,
+  routeId: r.id,
+  label: `Bus ${100 + i}`,
+  seats: 32,
+  taken: 10 + ((i * 7) % 22),
+  progress: 0.15 + (i * 0.11) % 0.7,
+  speed: 0.004 + (i % 3) * 0.001,
+  etaMin: 5 + i * 3,
+}));
+
+export type Passenger = {
+  id: string;
+  name: string;
+  lng: number;
+  lat: number;
+  routeId: string;
+};
+
+// Spread 12 passengers across routes near origins
+export const PASSENGERS: Passenger[] = ROUTES.flatMap((r, i) => {
+  const base: Passenger[] = [
+    {
+      id: `P-${i}-a`,
+      name: `Passenger ${i * 2 + 1}`,
+      lng: r.origin[0] + 0.004,
+      lat: r.origin[1] - 0.003,
+      routeId: r.id,
+    },
+  ];
+  if (i < 5)
+    base.push({
+      id: `P-${i}-b`,
+      name: `Passenger ${i * 2 + 2}`,
+      lng: r.origin[0] - 0.005,
+      lat: r.origin[1] + 0.004,
+      routeId: r.id,
+    });
+  return base;
+});
+
+export type Campaign = {
+  id: string;
+  name: string;
+  status: "active" | "paused";
+  impressions: number;
+  clicks: number;
+  budget: number;
+  spent: number;
+};
+
+export const CAMPAIGNS: Campaign[] = [
+  { id: "c1", name: "Ankawa Weekend Promo", status: "active", impressions: 18420, clicks: 942, budget: 500, spent: 312 },
+  { id: "c2", name: "Kasnazan Morning Rush", status: "active", impressions: 24310, clicks: 1180, budget: 750, spent: 510 },
+  { id: "c3", name: "Downtown Cafe", status: "paused", impressions: 5210, clicks: 220, budget: 200, spent: 145 },
+];
+
+export function interpolate(a: [number, number], b: [number, number], t: number): [number, number] {
+  return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
+}
