@@ -1,0 +1,12 @@
+{
+  "name": "Bbina — Erbil Bus Tracking",
+  "short_name": "Bbina",
+  "description": "Smart bus tracking for Erbil",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#4c1d95",
+  "icons": [
+    { "src": "/favicon.ico", "sizes": "any", "type": "image/x-icon" }
+  ]
+}
