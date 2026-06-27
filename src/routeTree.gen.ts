@@ -13,6 +13,7 @@ import { Route as SignupRouteImport } from './routes/signup'
 import { Route as PassengerRouteImport } from './routes/passenger'
 import { Route as OwnerRouteImport } from './routes/owner'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as AuditorRouteImport } from './routes/auditor'
 import { Route as AdvertiserRouteImport } from './routes/advertiser'
 import { Route as IndexRouteImport } from './routes/index'
 
@@ -36,6 +37,11 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuditorRoute = AuditorRouteImport.update({
+  id: '/auditor',
+  path: '/auditor',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdvertiserRoute = AdvertiserRouteImport.update({
   id: '/advertiser',
   path: '/advertiser',
@@ -50,6 +56,7 @@ const IndexRoute = IndexRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/advertiser': typeof AdvertiserRoute
+  '/auditor': typeof AuditorRoute
   '/login': typeof LoginRoute
   '/owner': typeof OwnerRoute
   '/passenger': typeof PassengerRoute
@@ -58,6 +65,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/advertiser': typeof AdvertiserRoute
+  '/auditor': typeof AuditorRoute
   '/login': typeof LoginRoute
   '/owner': typeof OwnerRoute
   '/passenger': typeof PassengerRoute
@@ -67,6 +75,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/advertiser': typeof AdvertiserRoute
+  '/auditor': typeof AuditorRoute
   '/login': typeof LoginRoute
   '/owner': typeof OwnerRoute
   '/passenger': typeof PassengerRoute
@@ -77,16 +86,25 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/advertiser'
+    | '/auditor'
     | '/login'
     | '/owner'
     | '/passenger'
     | '/signup'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/advertiser' | '/login' | '/owner' | '/passenger' | '/signup'
+  to:
+    | '/'
+    | '/advertiser'
+    | '/auditor'
+    | '/login'
+    | '/owner'
+    | '/passenger'
+    | '/signup'
   id:
     | '__root__'
     | '/'
     | '/advertiser'
+    | '/auditor'
     | '/login'
     | '/owner'
     | '/passenger'
@@ -96,6 +114,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdvertiserRoute: typeof AdvertiserRoute
+  AuditorRoute: typeof AuditorRoute
   LoginRoute: typeof LoginRoute
   OwnerRoute: typeof OwnerRoute
   PassengerRoute: typeof PassengerRoute
@@ -132,6 +151,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/auditor': {
+      id: '/auditor'
+      path: '/auditor'
+      fullPath: '/auditor'
+      preLoaderRoute: typeof AuditorRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/advertiser': {
       id: '/advertiser'
       path: '/advertiser'
@@ -152,6 +178,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdvertiserRoute: AdvertiserRoute,
+  AuditorRoute: AuditorRoute,
   LoginRoute: LoginRoute,
   OwnerRoute: OwnerRoute,
   PassengerRoute: PassengerRoute,
