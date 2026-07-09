@@ -130,7 +130,9 @@ export function getLiveFleet(): LiveBusView[] {
       result.push({ ...bus, gapAheadKm, gapAheadMin, etaToGarageMin });
     });
   }
-  return result.sort((a, b) => a.id.localeCompare(b.id));
+  // numeric: true so "B-0-2" sorts before "B-0-10" (plain string compare
+  // would put "B-0-10" first since "1" < "2").
+  return result.sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true }));
 }
 
 export function getBus(busId: string): LiveBusView | null {

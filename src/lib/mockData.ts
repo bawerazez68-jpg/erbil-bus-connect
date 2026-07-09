@@ -18,6 +18,9 @@ export const ROUTES: RouteDef[] = [
   { id: "bahrka", name: "Bahrka", color: "#ec4899", origin: [43.865, 36.212] },
   { id: "daratoo", name: "Daratoo", color: "#eab308", origin: [43.945, 36.247] },
   { id: "pirzen", name: "Pirzen", color: "#3b82f6", origin: [44.05, 36.255] },
+  { id: "sarchinar", name: "Sarchinar", color: "#ef4444", origin: [44.035, 36.165] },
+  { id: "havalan", name: "Havalan", color: "#14b8a6", origin: [44.07, 36.21] },
+  { id: "khabat", name: "Khabat", color: "#8b5cf6", origin: [43.92, 36.265] },
 ];
 
 export type Bus = {
@@ -33,52 +36,105 @@ export type Bus = {
   etaMin: number;
 };
 
-const DRIVER_NAMES = [
-  "Rebin Ahmad",
-  "Halgurd Salih",
-  "Shad Kamal",
-  "Aram Hussein",
-  "Newroz Karim",
-  "Ari Rasul",
-  "Dilan Fatih",
-  "Soran Aziz",
-  "Bnar Rauf",
-  "Zana Faraj",
-  "Hemin Sabir",
-  "Karwan Latif",
-  "Rojin Jamal",
-  "Diyar Nabi",
+const DRIVER_FIRST_NAMES = [
+  "Rebin",
+  "Halgurd",
+  "Shad",
+  "Aram",
+  "Newroz",
+  "Ari",
+  "Dilan",
+  "Soran",
+  "Bnar",
+  "Zana",
+  "Hemin",
+  "Karwan",
+  "Rojin",
+  "Diyar",
+  "Sarkawt",
+  "Rawa",
+  "Barham",
+  "Dana",
+  "Peshraw",
+  "Nawroz",
+  "Sirwan",
+  "Bahoz",
+  "Chia",
+  "Zhiar",
+  "Hawre",
+  "Bestun",
+  "Kawa",
+  "Rebaz",
+  "Sami",
+  "Twana",
 ];
 
-// Two buses per route (a route is served by multiple buses through the day,
-// with an interval/headway between them set by the auditor) — the first
-// batch keeps the original B-100..B-106 ids for backward compatibility with
-// AUDIT_ALERTS below; the second batch (B-200..B-206) are each route's
-// second bus, staggered further along the route.
-export const BUSES: Bus[] = [
-  ...ROUTES.map((r, i) => ({
-    id: `B-${100 + i}`,
-    routeId: r.id,
-    label: `Bus ${100 + i}`,
-    driverName: DRIVER_NAMES[i],
-    seats: 32,
-    taken: 10 + ((i * 7) % 22),
-    progress: 0.1 + ((i * 0.11) % 0.6),
-    speed: 0.004 + (i % 3) * 0.001,
-    etaMin: 5 + i * 3,
-  })),
-  ...ROUTES.map((r, i) => ({
-    id: `B-${200 + i}`,
-    routeId: r.id,
-    label: `Bus ${200 + i}`,
-    driverName: DRIVER_NAMES[7 + i],
-    seats: 32,
-    taken: 6 + ((i * 5) % 20),
-    progress: 0.45 + ((i * 0.09) % 0.5),
-    speed: 0.0035 + (i % 3) * 0.001,
-    etaMin: 12 + i * 3,
-  })),
+const DRIVER_LAST_NAMES = [
+  "Ahmad",
+  "Salih",
+  "Kamal",
+  "Hussein",
+  "Karim",
+  "Rasul",
+  "Fatih",
+  "Aziz",
+  "Rauf",
+  "Faraj",
+  "Sabir",
+  "Latif",
+  "Jamal",
+  "Nabi",
+  "Hamad",
+  "Qadir",
+  "Amin",
+  "Rashid",
+  "Omar",
+  "Saleh",
+  "Zangana",
+  "Hawrami",
+  "Soorani",
+  "Jaff",
+  "Mahmoud",
+  "Ismail",
+  "Yousif",
+  "Khalid",
+  "Barzani",
+  "Talabani",
 ];
+
+function driverNameFor(globalIndex: number): string {
+  const first = DRIVER_FIRST_NAMES[globalIndex % DRIVER_FIRST_NAMES.length];
+  const last = DRIVER_LAST_NAMES[(globalIndex * 7 + 3) % DRIVER_LAST_NAMES.length];
+  return `${first} ${last}`;
+}
+
+// Each route is served by a fleet of buses through the day, spaced along
+// the route with an interval/headway between them (set by the auditor —
+// see route_intervals in the server). Bus id is `B-<routeIndex>-<slot>` so
+// it's stable and traceable back to its route; label is a short per-route
+// code (e.g. "ANK-01") since a flat "Bus 100" numbering scheme doesn't
+// scale to this many buses.
+export const BUSES_PER_ROUTE = 25;
+
+export const BUSES: Bus[] = ROUTES.flatMap((r, routeIndex) => {
+  const code = r.id.slice(0, 3).toUpperCase();
+  return Array.from({ length: BUSES_PER_ROUTE }, (_, slot) => {
+    const globalIndex = routeIndex * BUSES_PER_ROUTE + slot;
+    return {
+      id: `B-${routeIndex}-${slot + 1}`,
+      routeId: r.id,
+      label: `${code}-${String(slot + 1).padStart(2, "0")}`,
+      driverName: driverNameFor(globalIndex),
+      seats: 32,
+      taken: 4 + ((globalIndex * 7) % 28),
+      // Spread evenly along the route so there's a visible convoy with a
+      // roughly consistent headway to start from.
+      progress: 0.02 + (slot / BUSES_PER_ROUTE) * 0.9,
+      speed: 0.003 + (globalIndex % 5) * 0.0006,
+      etaMin: 3 + (slot % 10) * 2,
+    };
+  });
+});
 
 export type Passenger = {
   id: string;
@@ -168,7 +224,7 @@ export type AuditAlert = {
 export const AUDIT_ALERTS: AuditAlert[] = [
   {
     id: "a1",
-    busId: "B-101",
+    busId: "B-1-3",
     routeId: "kasnazan",
     type: "deviation",
     severity: "high",
@@ -178,7 +234,7 @@ export const AUDIT_ALERTS: AuditAlert[] = [
   },
   {
     id: "a2",
-    busId: "B-103",
+    busId: "B-3-5",
     routeId: "qoshtapa",
     type: "ghost",
     severity: "medium",
@@ -188,7 +244,7 @@ export const AUDIT_ALERTS: AuditAlert[] = [
   },
   {
     id: "a3",
-    busId: "B-100",
+    busId: "B-0-1",
     routeId: "ankawa",
     type: "speed",
     severity: "low",
@@ -198,7 +254,7 @@ export const AUDIT_ALERTS: AuditAlert[] = [
   },
   {
     id: "a4",
-    busId: "B-104",
+    busId: "B-4-2",
     routeId: "bahrka",
     type: "stop",
     severity: "medium",
@@ -208,7 +264,7 @@ export const AUDIT_ALERTS: AuditAlert[] = [
   },
   {
     id: "a5",
-    busId: "B-106",
+    busId: "B-6-7",
     routeId: "pirzen",
     type: "deviation",
     severity: "low",
