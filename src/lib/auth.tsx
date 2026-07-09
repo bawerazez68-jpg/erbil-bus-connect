@@ -8,12 +8,6 @@ import {
   type ReactNode,
 } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import {
-  login as loginFn,
-  signup as signupFn,
-  refresh as refreshFn,
-  logout as logoutFn,
-} from "@/server/auth.functions";
 
 export type Role = "passenger" | "owner" | "advertiser" | "auditor";
 
@@ -23,6 +17,8 @@ export type User = {
   email: string;
   role: Role;
 };
+
+type AuthResult = { user: User; accessToken: string; expiresInSec: number };
 
 type Ctx = {
   user: User | null;
@@ -36,6 +32,28 @@ type Ctx = {
 };
 
 const AuthContext = createContext<Ctx | null>(null);
+
+// Plain fetch against the /api/auth/* server routes — not createServerFn —
+// because this project's import-protection config denies any
+// client-reachable file (this one is imported by the root route) from
+// importing anything under src/server/**, including createServerFn RPC
+// wrapper files. Server ROUTES don't have that restriction, so the actual
+// auth logic lives there; this file only ever talks to them over HTTP.
+async function apiCall<T>(path: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(path, {
+    ...init,
+    headers: { "Content-Type": "application/json", ...(init?.headers ?? {}) },
+  });
+  const body = await res.json().catch(() => null);
+  if (!res.ok) {
+    const message =
+      body && typeof body === "object" && typeof body.error === "string"
+        ? body.error
+        : "Request failed";
+    throw new Error(message);
+  }
+  return body as T;
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -56,7 +74,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const silentRefresh = useCallback(async () => {
     try {
-      const result = await refreshFn();
+      const result = await apiCall<AuthResult>("/api/auth/refresh", { method: "POST" });
       setUser(result.user);
       setAccessToken(result.accessToken);
       scheduleRefresh(result.expiresInSec);
@@ -76,7 +94,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = useCallback(
     async (email: string, password: string) => {
-      const result = await loginFn({ data: { email, password } });
+      const result = await apiCall<AuthResult>("/api/auth/login", {
+        method: "POST",
+        body: JSON.stringify({ email, password }),
+      });
       setUser(result.user);
       setAccessToken(result.accessToken);
       scheduleRefresh(result.expiresInSec);
@@ -87,7 +108,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signup = useCallback(
     async (name: string, email: string, password: string, role: Role) => {
-      const result = await signupFn({ data: { name, email, password, role } });
+      const result = await apiCall<AuthResult>("/api/auth/signup", {
+        method: "POST",
+        body: JSON.stringify({ name, email, password, role }),
+      });
       setUser(result.user);
       setAccessToken(result.accessToken);
       scheduleRefresh(result.expiresInSec);
@@ -99,7 +123,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = useCallback(async () => {
     if (refreshTimer.current) clearTimeout(refreshTimer.current);
     try {
-      await logoutFn();
+      await apiCall("/api/auth/logout", { method: "POST" });
     } finally {
       setUser(null);
       setAccessToken(null);

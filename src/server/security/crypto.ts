@@ -1,15 +1,61 @@
 import crypto from "node:crypto";
 import { getEncryptionKey } from "./env";
 
-// --- Password hashing (Argon2id via Bun's built-in Bun.password) ---
-// No extra dependency needed: Bun.password defaults to argon2id.
+// --- Password hashing ---
+// Argon2id via Bun's built-in Bun.password when actually running under Bun.
+// Vite's SSR dev pipeline (and a Node-based production deployment) executes
+// this code under plain Node instead, where the `Bun` global doesn't exist —
+// same dual-runtime situation as src/server/db.ts. Node has no built-in
+// Argon2/bcrypt, so the fallback uses node:crypto's scrypt, a memory-hard
+// KDF that's a reasonable built-in substitute without adding a dependency
+// this sandbox's registry can't fetch.
+
+const SCRYPT_KEYLEN = 64;
+const SCRYPT_PREFIX = "scrypt:";
+
+function isBunRuntime(): boolean {
+  return typeof (globalThis as { Bun?: unknown }).Bun !== "undefined";
+}
+
+function scryptDerive(password: string, salt: Buffer): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    crypto.scrypt(password, salt, SCRYPT_KEYLEN, (err, key) => (err ? reject(err) : resolve(key)));
+  });
+}
+
+async function hashPasswordScrypt(plain: string): Promise<string> {
+  const salt = crypto.randomBytes(16);
+  const derived = await scryptDerive(plain, salt);
+  return `${SCRYPT_PREFIX}${salt.toString("hex")}:${derived.toString("hex")}`;
+}
+
+async function verifyPasswordScrypt(stored: string, plain: string): Promise<boolean> {
+  const [, saltHex, hashHex] = stored.split(":");
+  if (!saltHex || !hashHex) return false;
+  const salt = Buffer.from(saltHex, "hex");
+  const expected = Buffer.from(hashHex, "hex");
+  const derived = await scryptDerive(plain, salt);
+  return derived.length === expected.length && crypto.timingSafeEqual(derived, expected);
+}
 
 export async function hashPassword(plain: string): Promise<string> {
-  return Bun.password.hash(plain, { algorithm: "argon2id", memoryCost: 19456, timeCost: 2 });
+  if (isBunRuntime()) {
+    return Bun.password.hash(plain, { algorithm: "argon2id", memoryCost: 19456, timeCost: 2 });
+  }
+  return hashPasswordScrypt(plain);
 }
 
 export async function verifyPassword(hash: string, plain: string): Promise<boolean> {
-  return Bun.password.verify(plain, hash);
+  if (hash.startsWith(SCRYPT_PREFIX)) {
+    return verifyPasswordScrypt(hash, plain);
+  }
+  if (isBunRuntime()) {
+    return Bun.password.verify(plain, hash);
+  }
+  // A Bun-produced (argon2id) hash can't be verified without Bun's native
+  // verifier. This should only happen if a user record was created while
+  // running under Bun and is later verified while running under Node.
+  return false;
 }
 
 // Precomputed at first use so login timing doesn't reveal whether an email

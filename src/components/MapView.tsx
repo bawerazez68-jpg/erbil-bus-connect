@@ -3,34 +3,55 @@ import maplibregl, { Map as MlMap, Marker } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { useServerFn } from "@tanstack/react-start";
 import { getMapTilerKey } from "@/lib/maptiler.functions";
-import {
-  BUSES,
-  DOWNTOWN_GARAGE,
-  PASSENGERS,
-  ROUTES,
-  interpolate,
-} from "@/lib/mockData";
+import { BUSES, DOWNTOWN_GARAGE, PASSENGERS, ROUTES, interpolate } from "@/lib/mockData";
+import type { LiveBus } from "@/lib/useLiveFleet";
 
 type Props = {
   showPassengers?: boolean;
   highlightRouteId?: string | null;
+  /** Server-authoritative bus positions (see useLiveFleet). When provided, these replace the local simulated animation so every role sees the same bus positions. */
+  liveBuses?: LiveBus[];
+  /** Called when a bus marker is clicked — lets the page show a detail/rating panel for that bus. */
+  onSelectBus?: (busId: string) => void;
+  /** A user-chosen point (passenger's pickup spot, auditor's checkpoint) rendered as a distinct marker. */
+  myLocation?: [number, number] | null;
+  /** Called with [lng, lat] when the map is clicked, so a page can let the user place myLocation. */
+  onSetMyLocation?: (lngLat: [number, number]) => void;
 };
 
-export function MapView({ showPassengers = true, highlightRouteId = null }: Props) {
+export function MapView({
+  showPassengers = true,
+  highlightRouteId = null,
+  liveBuses,
+  onSelectBus,
+  myLocation = null,
+  onSetMyLocation,
+}: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MlMap | null>(null);
   const busMarkersRef = useRef<Record<string, Marker>>({});
   const passengerMarkersRef = useRef<Record<string, Marker>>({});
+  const myLocationMarkerRef = useRef<Marker | null>(null);
   const passengerStateRef = useRef(
     PASSENGERS.map((p) => ({ lng: p.lng, lat: p.lat, vx: 0, vy: 0 })),
   );
+  const onSelectBusRef = useRef(onSelectBus);
+  const onSetMyLocationRef = useRef(onSetMyLocation);
   const fetchKey = useServerFn(getMapTilerKey);
   const [key, setKey] = useState<string>("");
   const [progress, setProgress] = useState(() => BUSES.map((b) => b.progress));
   const [passengerTick, setPassengerTick] = useState(0);
+  const hasLiveBuses = !!liveBuses;
 
   useEffect(() => {
-    fetchKey({}).then((r) => setKey(r.key)).catch(() => setKey(""));
+    onSelectBusRef.current = onSelectBus;
+    onSetMyLocationRef.current = onSetMyLocation;
+  });
+
+  useEffect(() => {
+    fetchKey({})
+      .then((r) => setKey(r.key))
+      .catch(() => setKey(""));
   }, [fetchKey]);
 
   useEffect(() => {
@@ -78,9 +99,7 @@ export function MapView({ showPassengers = true, highlightRouteId = null }: Prop
       // Downtown garage marker
       const garageEl = document.createElement("div");
       garageEl.innerHTML = `<div style="background:#0f172a;color:white;padding:6px 10px;border-radius:999px;font-size:12px;font-weight:600;box-shadow:0 4px 16px rgba(0,0,0,.3);border:2px solid #fbbf24">★ Downtown Garage</div>`;
-      new maplibregl.Marker({ element: garageEl })
-        .setLngLat(DOWNTOWN_GARAGE)
-        .addTo(map);
+      new maplibregl.Marker({ element: garageEl }).setLngLat(DOWNTOWN_GARAGE).addTo(map);
 
       // 3D buildings if available
       try {
@@ -107,6 +126,10 @@ export function MapView({ showPassengers = true, highlightRouteId = null }: Prop
       } catch {}
     });
 
+    map.on("click", (e) => {
+      onSetMyLocationRef.current?.([e.lngLat.lng, e.lngLat.lat]);
+    });
+
     mapRef.current = map;
     return () => {
       map.remove();
@@ -114,8 +137,11 @@ export function MapView({ showPassengers = true, highlightRouteId = null }: Prop
     };
   }, [key]);
 
-  // Animate bus progress — smoother updates every 250ms
+  // Animate bus progress locally — smoother updates every 250ms. Skipped
+  // entirely when liveBuses is supplied, since the server is then the
+  // authoritative position source (see useLiveFleet).
   useEffect(() => {
+    if (hasLiveBuses) return;
     const iv = setInterval(() => {
       setProgress((p) =>
         p.map((v, i) => {
@@ -125,7 +151,7 @@ export function MapView({ showPassengers = true, highlightRouteId = null }: Prop
       );
     }, 250);
     return () => clearInterval(iv);
-  }, []);
+  }, [hasLiveBuses]);
 
   // Drift passengers around their waiting spot
   useEffect(() => {
@@ -144,32 +170,90 @@ export function MapView({ showPassengers = true, highlightRouteId = null }: Prop
     return () => clearInterval(iv);
   }, []);
 
-  // Place / update bus markers
+  // Place / update bus markers — from the live fleed feed when provided,
+  // otherwise from the local simulated progress (see hasLiveBuses above).
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
 
-    BUSES.forEach((bus, i) => {
-      const route = ROUTES.find((r) => r.id === bus.routeId)!;
-      const pos = interpolate(route.origin, DOWNTOWN_GARAGE, progress[i]);
-      const dimmed = highlightRouteId && highlightRouteId !== bus.routeId;
-      let marker = busMarkersRef.current[bus.id];
+    const seenIds = new Set<string>();
+
+    const placeBus = (busId: string, routeId: string, pos: [number, number], popupHtml: string) => {
+      seenIds.add(busId);
+      const route = ROUTES.find((r) => r.id === routeId);
+      const color = route?.color ?? "#64748b";
+      const dimmed = highlightRouteId && highlightRouteId !== routeId;
+      let marker = busMarkersRef.current[busId];
       if (!marker) {
         const el = document.createElement("div");
-        el.innerHTML = `<div style="background:${route.color};color:white;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;box-shadow:0 4px 12px rgba(0,0,0,.4);border:2px solid white">🚌</div>`;
+        el.innerHTML = `<div style="background:${color};color:white;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;box-shadow:0 4px 12px rgba(0,0,0,.4);border:2px solid white;cursor:pointer">🚌</div>`;
+        el.addEventListener("click", () => onSelectBusRef.current?.(busId));
         marker = new maplibregl.Marker({ element: el }).setLngLat(pos).addTo(map);
-        marker.setPopup(
-          new maplibregl.Popup({ offset: 18 }).setHTML(
-            `<strong>${bus.label}</strong><br/>${route.name} → Downtown<br/>${bus.taken}/${bus.seats} seats`,
-          ),
-        );
-        busMarkersRef.current[bus.id] = marker;
+        marker.setPopup(new maplibregl.Popup({ offset: 18 }).setHTML(popupHtml));
+        busMarkersRef.current[busId] = marker;
       } else {
         marker.setLngLat(pos);
         marker.getElement().style.opacity = dimmed ? "0.3" : "1";
+        marker.getPopup()?.setHTML(popupHtml);
+      }
+    };
+
+    if (liveBuses) {
+      liveBuses.forEach((bus) => {
+        const route = ROUTES.find((r) => r.id === bus.routeId);
+        placeBus(
+          bus.id,
+          bus.routeId,
+          [bus.lng, bus.lat],
+          `<strong>${bus.label}</strong><br/>Driver: ${bus.driverName}<br/>${route?.name ?? bus.routeId} → Downtown<br/>${bus.taken}/${bus.seats} seats`,
+        );
+      });
+    } else {
+      BUSES.forEach((bus, i) => {
+        const route = ROUTES.find((r) => r.id === bus.routeId)!;
+        const pos = interpolate(route.origin, DOWNTOWN_GARAGE, progress[i]);
+        placeBus(
+          bus.id,
+          bus.routeId,
+          pos,
+          `<strong>${bus.label}</strong><br/>Driver: ${bus.driverName}<br/>${route.name} → Downtown<br/>${bus.taken}/${bus.seats} seats`,
+        );
+      });
+    }
+
+    // Remove markers for buses no longer present (e.g. filtered fleet).
+    Object.keys(busMarkersRef.current).forEach((id) => {
+      if (!seenIds.has(id)) {
+        busMarkersRef.current[id].remove();
+        delete busMarkersRef.current[id];
       }
     });
-  }, [progress, highlightRouteId]);
+  }, [liveBuses, progress, highlightRouteId]);
+
+  // Place / update the "my location" marker (passenger pickup spot, auditor checkpoint)
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    if (!myLocation) {
+      myLocationMarkerRef.current?.remove();
+      myLocationMarkerRef.current = null;
+      return;
+    }
+
+    if (!myLocationMarkerRef.current) {
+      const el = document.createElement("div");
+      el.innerHTML = `<div style="width:20px;height:20px;border-radius:50%;background:#2563eb;border:3px solid white;box-shadow:0 0 0 4px rgba(37,99,235,.35)"></div>`;
+      myLocationMarkerRef.current = new maplibregl.Marker({ element: el })
+        .setLngLat(myLocation)
+        .addTo(map);
+      myLocationMarkerRef.current.setPopup(
+        new maplibregl.Popup({ offset: 14 }).setHTML("<strong>My location</strong>"),
+      );
+    } else {
+      myLocationMarkerRef.current.setLngLat(myLocation);
+    }
+  }, [myLocation]);
 
   // Place / update passenger markers in sync with the drift tick
   useEffect(() => {
@@ -218,5 +302,7 @@ export function MapView({ showPassengers = true, highlightRouteId = null }: Prop
     };
   }, []);
 
-  return <div ref={containerRef} className="w-full h-full min-h-[400px] rounded-2xl overflow-hidden" />;
+  return (
+    <div ref={containerRef} className="w-full h-full min-h-[400px] rounded-2xl overflow-hidden" />
+  );
 }

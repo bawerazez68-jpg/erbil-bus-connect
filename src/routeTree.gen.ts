@@ -16,19 +16,20 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuditorRouteImport } from './routes/auditor'
 import { Route as AdvertiserRouteImport } from './routes/advertiser'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApiRatingsIndexRouteImport } from './routes/api/ratings/index'
 import { Route as ApiUploadsAvatarRouteImport } from './routes/api/uploads/avatar'
+import { Route as ApiFleetPenaltiesRouteImport } from './routes/api/fleet/penalties'
+import { Route as ApiFleetLiveRouteImport } from './routes/api/fleet/live'
+import { Route as ApiFleetIntervalsRouteImport } from './routes/api/fleet/intervals'
+import { Route as ApiAuthSignupRouteImport } from './routes/api/auth/signup'
+import { Route as ApiAuthRefreshRouteImport } from './routes/api/auth/refresh'
+import { Route as ApiAuthMeRouteImport } from './routes/api/auth/me'
+import { Route as ApiAuthLogoutRouteImport } from './routes/api/auth/logout'
+import { Route as ApiAuthLoginRouteImport } from './routes/api/auth/login'
 import { Route as ApiUploadsAvatarIdRouteImport } from './routes/api/uploads/avatar/$id'
+import { Route as ApiRatingsSummaryBusIdRouteImport } from './routes/api/ratings/summary/$busId'
+import { Route as ApiFleetLocationBusIdRouteImport } from './routes/api/fleet/location/$busId'
 
-const ApiUploadsAvatarRoute = ApiUploadsAvatarRouteImport.update({
-  id: '/api/uploads/avatar',
-  path: '/api/uploads/avatar',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiUploadsAvatarIdRoute = ApiUploadsAvatarIdRouteImport.update({
-  id: '/api/uploads/avatar/$id',
-  path: '/api/uploads/avatar/$id',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
   path: '/signup',
@@ -64,6 +65,71 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiRatingsIndexRoute = ApiRatingsIndexRouteImport.update({
+  id: '/api/ratings/',
+  path: '/api/ratings/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiUploadsAvatarRoute = ApiUploadsAvatarRouteImport.update({
+  id: '/api/uploads/avatar',
+  path: '/api/uploads/avatar',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiFleetPenaltiesRoute = ApiFleetPenaltiesRouteImport.update({
+  id: '/api/fleet/penalties',
+  path: '/api/fleet/penalties',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiFleetLiveRoute = ApiFleetLiveRouteImport.update({
+  id: '/api/fleet/live',
+  path: '/api/fleet/live',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiFleetIntervalsRoute = ApiFleetIntervalsRouteImport.update({
+  id: '/api/fleet/intervals',
+  path: '/api/fleet/intervals',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAuthSignupRoute = ApiAuthSignupRouteImport.update({
+  id: '/api/auth/signup',
+  path: '/api/auth/signup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAuthRefreshRoute = ApiAuthRefreshRouteImport.update({
+  id: '/api/auth/refresh',
+  path: '/api/auth/refresh',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAuthMeRoute = ApiAuthMeRouteImport.update({
+  id: '/api/auth/me',
+  path: '/api/auth/me',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAuthLogoutRoute = ApiAuthLogoutRouteImport.update({
+  id: '/api/auth/logout',
+  path: '/api/auth/logout',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAuthLoginRoute = ApiAuthLoginRouteImport.update({
+  id: '/api/auth/login',
+  path: '/api/auth/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiUploadsAvatarIdRoute = ApiUploadsAvatarIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => ApiUploadsAvatarRoute,
+} as any)
+const ApiRatingsSummaryBusIdRoute = ApiRatingsSummaryBusIdRouteImport.update({
+  id: '/api/ratings/summary/$busId',
+  path: '/api/ratings/summary/$busId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiFleetLocationBusIdRoute = ApiFleetLocationBusIdRouteImport.update({
+  id: '/api/fleet/location/$busId',
+  path: '/api/fleet/location/$busId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -73,7 +139,18 @@ export interface FileRoutesByFullPath {
   '/owner': typeof OwnerRoute
   '/passenger': typeof PassengerRoute
   '/signup': typeof SignupRoute
-  '/api/uploads/avatar': typeof ApiUploadsAvatarRoute
+  '/api/auth/login': typeof ApiAuthLoginRoute
+  '/api/auth/logout': typeof ApiAuthLogoutRoute
+  '/api/auth/me': typeof ApiAuthMeRoute
+  '/api/auth/refresh': typeof ApiAuthRefreshRoute
+  '/api/auth/signup': typeof ApiAuthSignupRoute
+  '/api/fleet/intervals': typeof ApiFleetIntervalsRoute
+  '/api/fleet/live': typeof ApiFleetLiveRoute
+  '/api/fleet/penalties': typeof ApiFleetPenaltiesRoute
+  '/api/uploads/avatar': typeof ApiUploadsAvatarRouteWithChildren
+  '/api/ratings/': typeof ApiRatingsIndexRoute
+  '/api/fleet/location/$busId': typeof ApiFleetLocationBusIdRoute
+  '/api/ratings/summary/$busId': typeof ApiRatingsSummaryBusIdRoute
   '/api/uploads/avatar/$id': typeof ApiUploadsAvatarIdRoute
 }
 export interface FileRoutesByTo {
@@ -84,7 +161,18 @@ export interface FileRoutesByTo {
   '/owner': typeof OwnerRoute
   '/passenger': typeof PassengerRoute
   '/signup': typeof SignupRoute
-  '/api/uploads/avatar': typeof ApiUploadsAvatarRoute
+  '/api/auth/login': typeof ApiAuthLoginRoute
+  '/api/auth/logout': typeof ApiAuthLogoutRoute
+  '/api/auth/me': typeof ApiAuthMeRoute
+  '/api/auth/refresh': typeof ApiAuthRefreshRoute
+  '/api/auth/signup': typeof ApiAuthSignupRoute
+  '/api/fleet/intervals': typeof ApiFleetIntervalsRoute
+  '/api/fleet/live': typeof ApiFleetLiveRoute
+  '/api/fleet/penalties': typeof ApiFleetPenaltiesRoute
+  '/api/uploads/avatar': typeof ApiUploadsAvatarRouteWithChildren
+  '/api/ratings': typeof ApiRatingsIndexRoute
+  '/api/fleet/location/$busId': typeof ApiFleetLocationBusIdRoute
+  '/api/ratings/summary/$busId': typeof ApiRatingsSummaryBusIdRoute
   '/api/uploads/avatar/$id': typeof ApiUploadsAvatarIdRoute
 }
 export interface FileRoutesById {
@@ -96,7 +184,18 @@ export interface FileRoutesById {
   '/owner': typeof OwnerRoute
   '/passenger': typeof PassengerRoute
   '/signup': typeof SignupRoute
-  '/api/uploads/avatar': typeof ApiUploadsAvatarRoute
+  '/api/auth/login': typeof ApiAuthLoginRoute
+  '/api/auth/logout': typeof ApiAuthLogoutRoute
+  '/api/auth/me': typeof ApiAuthMeRoute
+  '/api/auth/refresh': typeof ApiAuthRefreshRoute
+  '/api/auth/signup': typeof ApiAuthSignupRoute
+  '/api/fleet/intervals': typeof ApiFleetIntervalsRoute
+  '/api/fleet/live': typeof ApiFleetLiveRoute
+  '/api/fleet/penalties': typeof ApiFleetPenaltiesRoute
+  '/api/uploads/avatar': typeof ApiUploadsAvatarRouteWithChildren
+  '/api/ratings/': typeof ApiRatingsIndexRoute
+  '/api/fleet/location/$busId': typeof ApiFleetLocationBusIdRoute
+  '/api/ratings/summary/$busId': typeof ApiRatingsSummaryBusIdRoute
   '/api/uploads/avatar/$id': typeof ApiUploadsAvatarIdRoute
 }
 export interface FileRouteTypes {
@@ -109,7 +208,18 @@ export interface FileRouteTypes {
     | '/owner'
     | '/passenger'
     | '/signup'
+    | '/api/auth/login'
+    | '/api/auth/logout'
+    | '/api/auth/me'
+    | '/api/auth/refresh'
+    | '/api/auth/signup'
+    | '/api/fleet/intervals'
+    | '/api/fleet/live'
+    | '/api/fleet/penalties'
     | '/api/uploads/avatar'
+    | '/api/ratings/'
+    | '/api/fleet/location/$busId'
+    | '/api/ratings/summary/$busId'
     | '/api/uploads/avatar/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -120,7 +230,18 @@ export interface FileRouteTypes {
     | '/owner'
     | '/passenger'
     | '/signup'
+    | '/api/auth/login'
+    | '/api/auth/logout'
+    | '/api/auth/me'
+    | '/api/auth/refresh'
+    | '/api/auth/signup'
+    | '/api/fleet/intervals'
+    | '/api/fleet/live'
+    | '/api/fleet/penalties'
     | '/api/uploads/avatar'
+    | '/api/ratings'
+    | '/api/fleet/location/$busId'
+    | '/api/ratings/summary/$busId'
     | '/api/uploads/avatar/$id'
   id:
     | '__root__'
@@ -131,7 +252,18 @@ export interface FileRouteTypes {
     | '/owner'
     | '/passenger'
     | '/signup'
+    | '/api/auth/login'
+    | '/api/auth/logout'
+    | '/api/auth/me'
+    | '/api/auth/refresh'
+    | '/api/auth/signup'
+    | '/api/fleet/intervals'
+    | '/api/fleet/live'
+    | '/api/fleet/penalties'
     | '/api/uploads/avatar'
+    | '/api/ratings/'
+    | '/api/fleet/location/$busId'
+    | '/api/ratings/summary/$busId'
     | '/api/uploads/avatar/$id'
   fileRoutesById: FileRoutesById
 }
@@ -143,8 +275,18 @@ export interface RootRouteChildren {
   OwnerRoute: typeof OwnerRoute
   PassengerRoute: typeof PassengerRoute
   SignupRoute: typeof SignupRoute
-  ApiUploadsAvatarRoute: typeof ApiUploadsAvatarRoute
-  ApiUploadsAvatarIdRoute: typeof ApiUploadsAvatarIdRoute
+  ApiAuthLoginRoute: typeof ApiAuthLoginRoute
+  ApiAuthLogoutRoute: typeof ApiAuthLogoutRoute
+  ApiAuthMeRoute: typeof ApiAuthMeRoute
+  ApiAuthRefreshRoute: typeof ApiAuthRefreshRoute
+  ApiAuthSignupRoute: typeof ApiAuthSignupRoute
+  ApiFleetIntervalsRoute: typeof ApiFleetIntervalsRoute
+  ApiFleetLiveRoute: typeof ApiFleetLiveRoute
+  ApiFleetPenaltiesRoute: typeof ApiFleetPenaltiesRoute
+  ApiUploadsAvatarRoute: typeof ApiUploadsAvatarRouteWithChildren
+  ApiRatingsIndexRoute: typeof ApiRatingsIndexRoute
+  ApiFleetLocationBusIdRoute: typeof ApiFleetLocationBusIdRoute
+  ApiRatingsSummaryBusIdRoute: typeof ApiRatingsSummaryBusIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -198,6 +340,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/ratings/': {
+      id: '/api/ratings/'
+      path: '/api/ratings'
+      fullPath: '/api/ratings/'
+      preLoaderRoute: typeof ApiRatingsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/uploads/avatar': {
       id: '/api/uploads/avatar'
       path: '/api/uploads/avatar'
@@ -205,15 +354,96 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiUploadsAvatarRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/fleet/penalties': {
+      id: '/api/fleet/penalties'
+      path: '/api/fleet/penalties'
+      fullPath: '/api/fleet/penalties'
+      preLoaderRoute: typeof ApiFleetPenaltiesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/fleet/live': {
+      id: '/api/fleet/live'
+      path: '/api/fleet/live'
+      fullPath: '/api/fleet/live'
+      preLoaderRoute: typeof ApiFleetLiveRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/fleet/intervals': {
+      id: '/api/fleet/intervals'
+      path: '/api/fleet/intervals'
+      fullPath: '/api/fleet/intervals'
+      preLoaderRoute: typeof ApiFleetIntervalsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/auth/signup': {
+      id: '/api/auth/signup'
+      path: '/api/auth/signup'
+      fullPath: '/api/auth/signup'
+      preLoaderRoute: typeof ApiAuthSignupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/auth/refresh': {
+      id: '/api/auth/refresh'
+      path: '/api/auth/refresh'
+      fullPath: '/api/auth/refresh'
+      preLoaderRoute: typeof ApiAuthRefreshRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/auth/me': {
+      id: '/api/auth/me'
+      path: '/api/auth/me'
+      fullPath: '/api/auth/me'
+      preLoaderRoute: typeof ApiAuthMeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/auth/logout': {
+      id: '/api/auth/logout'
+      path: '/api/auth/logout'
+      fullPath: '/api/auth/logout'
+      preLoaderRoute: typeof ApiAuthLogoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/auth/login': {
+      id: '/api/auth/login'
+      path: '/api/auth/login'
+      fullPath: '/api/auth/login'
+      preLoaderRoute: typeof ApiAuthLoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/uploads/avatar/$id': {
       id: '/api/uploads/avatar/$id'
-      path: '/api/uploads/avatar/$id'
+      path: '/$id'
       fullPath: '/api/uploads/avatar/$id'
       preLoaderRoute: typeof ApiUploadsAvatarIdRouteImport
+      parentRoute: typeof ApiUploadsAvatarRoute
+    }
+    '/api/ratings/summary/$busId': {
+      id: '/api/ratings/summary/$busId'
+      path: '/api/ratings/summary/$busId'
+      fullPath: '/api/ratings/summary/$busId'
+      preLoaderRoute: typeof ApiRatingsSummaryBusIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/fleet/location/$busId': {
+      id: '/api/fleet/location/$busId'
+      path: '/api/fleet/location/$busId'
+      fullPath: '/api/fleet/location/$busId'
+      preLoaderRoute: typeof ApiFleetLocationBusIdRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
 }
+
+interface ApiUploadsAvatarRouteChildren {
+  ApiUploadsAvatarIdRoute: typeof ApiUploadsAvatarIdRoute
+}
+
+const ApiUploadsAvatarRouteChildren: ApiUploadsAvatarRouteChildren = {
+  ApiUploadsAvatarIdRoute: ApiUploadsAvatarIdRoute,
+}
+
+const ApiUploadsAvatarRouteWithChildren =
+  ApiUploadsAvatarRoute._addFileChildren(ApiUploadsAvatarRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
@@ -223,9 +453,29 @@ const rootRouteChildren: RootRouteChildren = {
   OwnerRoute: OwnerRoute,
   PassengerRoute: PassengerRoute,
   SignupRoute: SignupRoute,
-  ApiUploadsAvatarRoute: ApiUploadsAvatarRoute,
-  ApiUploadsAvatarIdRoute: ApiUploadsAvatarIdRoute,
+  ApiAuthLoginRoute: ApiAuthLoginRoute,
+  ApiAuthLogoutRoute: ApiAuthLogoutRoute,
+  ApiAuthMeRoute: ApiAuthMeRoute,
+  ApiAuthRefreshRoute: ApiAuthRefreshRoute,
+  ApiAuthSignupRoute: ApiAuthSignupRoute,
+  ApiFleetIntervalsRoute: ApiFleetIntervalsRoute,
+  ApiFleetLiveRoute: ApiFleetLiveRoute,
+  ApiFleetPenaltiesRoute: ApiFleetPenaltiesRoute,
+  ApiUploadsAvatarRoute: ApiUploadsAvatarRouteWithChildren,
+  ApiRatingsIndexRoute: ApiRatingsIndexRoute,
+  ApiFleetLocationBusIdRoute: ApiFleetLocationBusIdRoute,
+  ApiRatingsSummaryBusIdRoute: ApiRatingsSummaryBusIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

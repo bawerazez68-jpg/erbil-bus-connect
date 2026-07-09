@@ -22,6 +22,12 @@ import { getJwtAccessSecret } from "./security/env";
 export const ACCESS_TOKEN_TTL_SEC = 15 * 60; // 15 minutes
 export const REFRESH_TOKEN_TTL_SEC = 7 * 24 * 60 * 60; // 7 days
 
+export class EmailAlreadyExistsError extends Error {
+  constructor() {
+    super("An account with this email already exists");
+  }
+}
+
 export type PublicUser = { id: string; name: string; email: string; role: Role };
 
 function toPublicUser(row: { id: string; name: string; email: string; role: Role }): PublicUser {
@@ -36,7 +42,7 @@ export async function createUser(input: {
 }): Promise<PublicUser> {
   const existing = findUserByEmail(input.email);
   if (existing) {
-    throw new Error("An account with this email already exists");
+    throw new EmailAlreadyExistsError();
   }
   const passwordHash = await hashPassword(input.password);
   const id = crypto.randomUUID();

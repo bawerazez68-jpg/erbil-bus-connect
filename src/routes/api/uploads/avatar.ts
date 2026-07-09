@@ -50,8 +50,16 @@ export const Route = createFileRoute("/api/uploads/avatar")({
           return Response.json({ error: "Missing avatar file" }, { status: 400 });
         }
         if (file.size === 0 || file.size > MAX_UPLOAD_BYTES) {
-          logSecurityEvent({ type: "upload_rejected", userId, ip, detail: { reason: "size", size: file.size } });
-          return Response.json({ error: `File must be between 1 byte and ${MAX_UPLOAD_BYTES} bytes` }, { status: 400 });
+          logSecurityEvent({
+            type: "upload_rejected",
+            userId,
+            ip,
+            detail: { reason: "size", size: file.size },
+          });
+          return Response.json(
+            { error: `File must be between 1 byte and ${MAX_UPLOAD_BYTES} bytes` },
+            { status: 400 },
+          );
         }
 
         const bytes = new Uint8Array(await file.arrayBuffer());
@@ -59,14 +67,32 @@ export const Route = createFileRoute("/api/uploads/avatar")({
         // the real type from the file's magic bytes.
         const sniffed = sniffImageMime(bytes);
         if (!sniffed || !(ALLOWED_UPLOAD_MIME_TYPES as readonly string[]).includes(sniffed.mime)) {
-          logSecurityEvent({ type: "upload_rejected", userId, ip, detail: { reason: "mime", claimedType: file.type } });
+          logSecurityEvent({
+            type: "upload_rejected",
+            userId,
+            ip,
+            detail: { reason: "mime", claimedType: file.type },
+          });
           return Response.json({ error: "Unsupported or invalid image file" }, { status: 400 });
         }
 
-        const saved = await saveAvatarUpload({ userId, bytes, mime: sniffed.mime, ext: sniffed.ext });
-        logSecurityEvent({ type: "upload_accepted", userId, ip, detail: { id: saved.id, mime: sniffed.mime, size: bytes.byteLength } });
+        const saved = await saveAvatarUpload({
+          userId,
+          bytes,
+          mime: sniffed.mime,
+          ext: sniffed.ext,
+        });
+        logSecurityEvent({
+          type: "upload_accepted",
+          userId,
+          ip,
+          detail: { id: saved.id, mime: sniffed.mime, size: bytes.byteLength },
+        });
 
-        return Response.json({ id: saved.id, url: `/api/uploads/avatar/${saved.id}` }, { status: 201 });
+        return Response.json(
+          { id: saved.id, url: `/api/uploads/avatar/${saved.id}` },
+          { status: 201 },
+        );
       },
     },
   },

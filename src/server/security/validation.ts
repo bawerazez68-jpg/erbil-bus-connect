@@ -56,3 +56,25 @@ export const loginSchema = z.object({
 // Content-Type header or filename extension.
 export const ALLOWED_UPLOAD_MIME_TYPES = ["image/png", "image/jpeg", "image/webp"] as const;
 export const MAX_UPLOAD_BYTES = 2 * 1024 * 1024; // 2 MiB
+
+export const driverLocationSchema = z.object({
+  lat: z.number().min(-90).max(90),
+  lng: z.number().min(-180).max(180),
+});
+
+export const routeIntervalSchema = z.object({
+  routeId: z.string().min(1).max(64),
+  intervalMinutes: z.number().int().min(1).max(180),
+});
+
+export const penaltySchema = z.object({
+  busId: z.string().min(1).max(64),
+  reason: z.string().trim().min(1, "Reason is required").max(300).transform(stripControlChars),
+  minutesLate: z.number().int().min(0).max(600),
+});
+
+export const ratingSchema = z.object({
+  busId: z.string().min(1).max(64),
+  rating: z.number().int().min(1).max(5),
+  comment: z.string().trim().max(500).transform(stripControlChars).optional(),
+});
