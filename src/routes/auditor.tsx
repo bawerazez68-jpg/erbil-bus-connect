@@ -189,7 +189,7 @@ function AuditorPage() {
                       {a.status === "open" && (
                         <button
                           onClick={() => clear(a.id)}
-                          className="px-3 py-1 rounded-full bg-white text-emerald-800 font-semibold"
+                          className="px-3 py-1 rounded-full bg-white text-violet-900 font-semibold"
                         >
                           {t("investigate")} ✓
                         </button>
@@ -257,7 +257,7 @@ function AuditorPage() {
                 <span className="text-xs text-white/70">minutes</span>
                 <button
                   onClick={submitInterval}
-                  className="text-xs px-3 py-2 rounded-full bg-white text-emerald-800 font-semibold"
+                  className="text-xs px-3 py-2 rounded-full bg-white text-violet-900 font-semibold"
                 >
                   Set interval
                 </button>
@@ -345,7 +345,7 @@ function AuditorPage() {
                       </Badge>
                     </div>
                     <div className="mt-2">
-                      <Progress value={score} color="bg-emerald-300" />
+                      <Progress value={score} color="bg-violet-300" />
                     </div>
                   </li>
                 );
