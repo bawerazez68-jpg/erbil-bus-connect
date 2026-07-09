@@ -1,7 +1,39 @@
 import crypto from "node:crypto";
 import path from "node:path";
 import { mkdirSync } from "node:fs";
+import { writeFile, readFile } from "node:fs/promises";
 import { insertAvatarUpload, findAvatarUploadById } from "./db";
+
+// Bun.write/Bun.file only exist when actually running under Bun — same
+// dual-runtime situation as db.ts and crypto.ts (Vite's SSR dev pipeline,
+// and a Node-based production deployment, run this under plain Node).
+function isBunRuntime(): boolean {
+  return typeof (globalThis as { Bun?: unknown }).Bun !== "undefined";
+}
+
+async function writeFileAdaptive(filePath: string, bytes: Uint8Array): Promise<void> {
+  if (isBunRuntime()) {
+    await Bun.write(filePath, bytes);
+    return;
+  }
+  await writeFile(filePath, bytes);
+}
+
+async function readFileAdaptive(filePath: string): Promise<Uint8Array | null> {
+  if (isBunRuntime()) {
+    const file = Bun.file(filePath);
+    if (!(await file.exists())) return null;
+    return new Uint8Array(await file.arrayBuffer());
+  }
+  try {
+    // Wrap in a fresh Uint8Array so the type is unambiguously ArrayBuffer-backed
+    // (Buffer's type allows a SharedArrayBuffer-backed view, which Blob's
+    // BlobPart type rejects).
+    return new Uint8Array(await readFile(filePath));
+  } catch {
+    return null;
+  }
+}
 
 // Stored outside of public/ — the only way to read a file back is through
 // the controlled GET route (routes/api/uploads/avatar.$id.ts), which looks
@@ -69,7 +101,7 @@ export async function saveAvatarUpload(input: {
   // attacks via crafted filenames.
   const filename = `${id}.${input.ext}`;
   const filePath = path.join(uploadsDir, filename);
-  await Bun.write(filePath, input.bytes);
+  await writeFileAdaptive(filePath, input.bytes);
   insertAvatarUpload({
     id,
     userId: input.userId,
@@ -80,8 +112,12 @@ export async function saveAvatarUpload(input: {
   return { id };
 }
 
-export function getAvatarUploadPath(id: string): { filePath: string; mime: string } | null {
+export async function readAvatarUpload(
+  id: string,
+): Promise<{ bytes: Uint8Array; mime: string } | null> {
   const row = findAvatarUploadById(id);
   if (!row) return null;
-  return { filePath: path.join(uploadsDir, row.filename), mime: row.mime };
+  const bytes = await readFileAdaptive(path.join(uploadsDir, row.filename));
+  if (!bytes) return null;
+  return { bytes, mime: row.mime };
 }

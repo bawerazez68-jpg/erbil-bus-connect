@@ -1,8 +1,19 @@
-import { createStart, createMiddleware } from "@tanstack/react-start";
+import { createStart, createMiddleware, createCsrfMiddleware } from "@tanstack/react-start";
 
 import { renderErrorPage } from "./lib/error-page";
-import { csrfMiddleware } from "./middleware/csrf";
 import { securityHeadersMiddleware } from "./middleware/headers";
+
+// TanStack Start's own CSRF middleware: checks Sec-Fetch-Site (modern
+// browsers), falling back to Origin, falling back to Referer — stronger
+// than an Origin-only check since Sec-Fetch-Site survives some proxies that
+// strip Origin. CSRF only matters for state-changing requests, so the
+// filter restricts checks to non-GET/HEAD — without it, top-level page
+// navigation (Sec-Fetch-Site: "none", no Origin/Referer) gets rejected too,
+// since its default only accepts "same-origin".
+const csrfMiddleware = createCsrfMiddleware({
+  filter: (ctx) => ctx.request.method !== "GET" && ctx.request.method !== "HEAD",
+  ...(process.env.APP_ORIGIN ? { origin: process.env.APP_ORIGIN } : {}),
+});
 
 const errorMiddleware = createMiddleware().server(async ({ next }) => {
   try {
