@@ -7,6 +7,7 @@ import { Badge } from "@/components/Badge";
 import { Progress } from "@/components/Progress";
 import { MapView } from "@/components/MapView";
 import { DriverLocationReporter } from "@/components/DriverLocationReporter";
+import { AdsFeed } from "@/components/AdsFeed";
 import { ROUTES } from "@/lib/mockData";
 import { useI18n } from "@/lib/i18n";
 import { useRequireRole } from "@/lib/auth";
@@ -111,6 +112,7 @@ function OwnerPage() {
                 })}
               </ul>
             </GlassCard>
+            <AdsFeed />
           </div>
         </div>
       </main>

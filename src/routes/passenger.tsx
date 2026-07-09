@@ -7,6 +7,7 @@ import { Badge } from "@/components/Badge";
 import { Stat } from "@/components/Stat";
 import { MapView } from "@/components/MapView";
 import { BusDetailPanel } from "@/components/BusDetailPanel";
+import { AdsFeed } from "@/components/AdsFeed";
 import { ROUTES } from "@/lib/mockData";
 import { useI18n } from "@/lib/i18n";
 import { useRequireRole } from "@/lib/auth";
@@ -128,6 +129,7 @@ function PassengerPage() {
                 })}
               </ul>
             </GlassCard>
+            <AdsFeed />
           </div>
         </div>
       </main>

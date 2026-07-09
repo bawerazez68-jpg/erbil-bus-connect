@@ -17,7 +17,8 @@ type Row = Record<string, unknown>;
 interface PreparedStatement<T, P extends readonly unknown[]> {
   get(...params: P): T | null;
   all(...params: P): T[];
-  run(...params: P): void;
+  /** Returns the number of rows the statement changed (needed for ownership-guarded UPDATEs). */
+  run(...params: P): number;
 }
 
 interface SqliteHandle {
@@ -36,9 +37,7 @@ async function openDatabase(filename: string): Promise<SqliteHandle> {
         return {
           get: (...params: P) => stmt.get(...params) ?? null,
           all: (...params: P) => stmt.all(...params),
-          run: (...params: P) => {
-            stmt.run(...params);
-          },
+          run: (...params: P) => Number(stmt.run(...params).changes),
         };
       },
     };
@@ -60,7 +59,7 @@ async function openDatabase(filename: string): Promise<SqliteHandle> {
         all: (...params: P) => stmt.all(...(params as unknown as any[])) as T[],
         run: (...params: P) => {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          stmt.run(...(params as unknown as any[]));
+          return Number(stmt.run(...(params as unknown as any[])).changes);
         },
       };
     },
@@ -148,6 +147,35 @@ db.exec(`
     UNIQUE (bus_id, passenger_id)
   );
   CREATE INDEX IF NOT EXISTS idx_ratings_bus ON ratings(bus_id);
+
+  -- Ads an advertiser posts, shown to passengers/owners/auditors.
+  CREATE TABLE IF NOT EXISTS ads (
+    id TEXT PRIMARY KEY,
+    advertiser_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    title TEXT NOT NULL,
+    body TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'active',
+    created_at INTEGER NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_ads_advertiser ON ads(advertiser_id);
+  CREATE INDEX IF NOT EXISTS idx_ads_status ON ads(status);
+
+  -- One row per (ad, viewer): counts unique viewers ("reach") rather than
+  -- raw impressions, so refreshing the page can't inflate the count the
+  -- poster sees.
+  CREATE TABLE IF NOT EXISTS ad_views (
+    ad_id TEXT NOT NULL REFERENCES ads(id) ON DELETE CASCADE,
+    viewer_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    created_at INTEGER NOT NULL,
+    PRIMARY KEY (ad_id, viewer_id)
+  );
+
+  CREATE TABLE IF NOT EXISTS ad_likes (
+    ad_id TEXT NOT NULL REFERENCES ads(id) ON DELETE CASCADE,
+    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    created_at INTEGER NOT NULL,
+    PRIMARY KEY (ad_id, user_id)
+  );
 `);
 
 export type UserRow = {
@@ -254,6 +282,57 @@ const stmts = {
   ratingSummaryForBus: db.prepare<{ avg_rating: number | null; count: number }, [string]>(
     `SELECT AVG(rating) as avg_rating, COUNT(*) as count FROM ratings WHERE bus_id = ?`,
   ),
+
+  insertAd: db.prepare(
+    `INSERT INTO ads (id, advertiser_id, title, body, status, created_at) VALUES (?, ?, ?, ?, 'active', ?)`,
+  ),
+  getAdById: db.prepare<AdRow, [string]>(`SELECT * FROM ads WHERE id = ?`),
+  // Active ads for the public feed, with a like count everyone can see and
+  // a per-viewer likedByMe flag — but no view count, which is only ever
+  // exposed to the ad's own poster (see listAdsByAdvertiser).
+  listActiveAdsForViewer: db.prepare<
+    AdRow & { like_count: number; liked_by_me: number; advertiser_name: string },
+    [string]
+  >(`
+    SELECT a.*, u.name as advertiser_name,
+      (SELECT COUNT(*) FROM ad_likes l WHERE l.ad_id = a.id) as like_count,
+      EXISTS(SELECT 1 FROM ad_likes l2 WHERE l2.ad_id = a.id AND l2.user_id = ?) as liked_by_me
+    FROM ads a
+    JOIN users u ON u.id = a.advertiser_id
+    WHERE a.status = 'active'
+    ORDER BY a.created_at DESC
+  `),
+  listAdsByAdvertiser: db.prepare<AdRow & { view_count: number; like_count: number }, [string]>(`
+    SELECT a.*,
+      (SELECT COUNT(*) FROM ad_views v WHERE v.ad_id = a.id) as view_count,
+      (SELECT COUNT(*) FROM ad_likes l WHERE l.ad_id = a.id) as like_count
+    FROM ads a
+    WHERE a.advertiser_id = ?
+    ORDER BY a.created_at DESC
+  `),
+  setAdStatus: db.prepare(`UPDATE ads SET status = ? WHERE id = ? AND advertiser_id = ?`),
+
+  recordAdView: db.prepare(
+    `INSERT OR IGNORE INTO ad_views (ad_id, viewer_id, created_at) VALUES (?, ?, ?)`,
+  ),
+
+  findAdLike: db.prepare<{ ad_id: string }, [string, string]>(
+    `SELECT ad_id FROM ad_likes WHERE ad_id = ? AND user_id = ?`,
+  ),
+  insertAdLike: db.prepare(`INSERT INTO ad_likes (ad_id, user_id, created_at) VALUES (?, ?, ?)`),
+  deleteAdLike: db.prepare(`DELETE FROM ad_likes WHERE ad_id = ? AND user_id = ?`),
+  countAdLikes: db.prepare<{ count: number }, [string]>(
+    `SELECT COUNT(*) as count FROM ad_likes WHERE ad_id = ?`,
+  ),
+};
+
+type AdRow = {
+  id: string;
+  advertiser_id: string;
+  title: string;
+  body: string;
+  status: "active" | "paused";
+  created_at: number;
 };
 
 export function insertUser(user: {
@@ -392,4 +471,45 @@ export function upsertRating(entry: {
 export function getRatingSummary(busId: string): { avgRating: number | null; count: number } {
   const row = stmts.ratingSummaryForBus.get(busId);
   return { avgRating: row?.avg_rating ?? null, count: row?.count ?? 0 };
+}
+
+export function insertAd(entry: { id: string; advertiserId: string; title: string; body: string }) {
+  stmts.insertAd.run(entry.id, entry.advertiserId, entry.title, entry.body, Date.now());
+}
+
+export function getAdById(id: string) {
+  return stmts.getAdById.get(id);
+}
+
+export function listActiveAdsForViewer(viewerId: string) {
+  return stmts.listActiveAdsForViewer.all(viewerId);
+}
+
+export function listAdsByAdvertiser(advertiserId: string) {
+  return stmts.listAdsByAdvertiser.all(advertiserId);
+}
+
+/** Returns true if the update actually matched (i.e. the caller owns the ad). */
+export function setAdStatus(
+  adId: string,
+  advertiserId: string,
+  status: "active" | "paused",
+): boolean {
+  return stmts.setAdStatus.run(status, adId, advertiserId) > 0;
+}
+
+export function recordAdView(adId: string, viewerId: string) {
+  stmts.recordAdView.run(adId, viewerId, Date.now());
+}
+
+/** Toggles the current user's like on an ad. Returns the new liked state and the updated like count. */
+export function toggleAdLike(adId: string, userId: string): { liked: boolean; likeCount: number } {
+  const existing = stmts.findAdLike.get(adId, userId);
+  if (existing) {
+    stmts.deleteAdLike.run(adId, userId);
+  } else {
+    stmts.insertAdLike.run(adId, userId, Date.now());
+  }
+  const count = stmts.countAdLikes.get(adId)?.count ?? 0;
+  return { liked: !existing, likeCount: count };
 }

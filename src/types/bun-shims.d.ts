@@ -14,7 +14,7 @@ declare module "bun:sqlite" {
     ): {
       get: (...params: P) => T | null;
       all: (...params: P) => T[];
-      run: (...params: P) => void;
+      run: (...params: P) => { changes: number; lastInsertRowid: number };
     };
   }
 }
@@ -23,7 +23,11 @@ declare const Bun: {
   password: {
     hash(
       password: string,
-      options?: { algorithm?: "argon2id" | "argon2i" | "argon2d" | "bcrypt"; memoryCost?: number; timeCost?: number },
+      options?: {
+        algorithm?: "argon2id" | "argon2i" | "argon2d" | "bcrypt";
+        memoryCost?: number;
+        timeCost?: number;
+      },
     ): Promise<string>;
     verify(password: string, hash: string): Promise<boolean>;
   };

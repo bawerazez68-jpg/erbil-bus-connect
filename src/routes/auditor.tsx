@@ -7,6 +7,7 @@ import { Stat } from "@/components/Stat";
 import { Badge } from "@/components/Badge";
 import { Progress } from "@/components/Progress";
 import { MapView } from "@/components/MapView";
+import { AdsFeed } from "@/components/AdsFeed";
 import { AUDIT_ALERTS, ROUTES, type AuditAlert } from "@/lib/mockData";
 import { useI18n } from "@/lib/i18n";
 import { useAuth, useRequireRole } from "@/lib/auth";
@@ -319,6 +320,10 @@ function AuditorPage() {
               )}
             </GlassCard>
           </div>
+        </div>
+
+        <div className="mt-4">
+          <AdsFeed />
         </div>
 
         <div className="mt-4">
