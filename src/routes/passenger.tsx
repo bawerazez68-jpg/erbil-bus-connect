@@ -8,6 +8,7 @@ import { Stat } from "@/components/Stat";
 import { MapView } from "@/components/MapView";
 import { BUSES, PASSENGERS, ROUTES } from "@/lib/mockData";
 import { useI18n } from "@/lib/i18n";
+import { useRequireRole } from "@/lib/auth";
 
 export const Route = createFileRoute("/passenger")({
   head: () => ({ meta: [{ title: "Passenger — Bbina" }] }),
@@ -17,6 +18,8 @@ export const Route = createFileRoute("/passenger")({
 function PassengerPage() {
   const { t } = useI18n();
   const [selected, setSelected] = useState<string | null>(null);
+  const { user, isLoading } = useRequireRole("passenger");
+  if (isLoading || user?.role !== "passenger") return null;
 
   return (
     <AnimatedGradient theme="passenger">
@@ -44,7 +47,9 @@ function PassengerPage() {
                     <button
                       onClick={() => setSelected(active ? null : r.id)}
                       className={`w-full text-start p-3 rounded-xl border transition ${
-                        active ? "bg-white/25 border-white/40" : "bg-white/5 border-white/15 hover:bg-white/15"
+                        active
+                          ? "bg-white/25 border-white/40"
+                          : "bg-white/5 border-white/15 hover:bg-white/15"
                       }`}
                     >
                       <div className="flex items-center justify-between">
@@ -52,7 +57,9 @@ function PassengerPage() {
                           <span className="w-3 h-3 rounded-full" style={{ background: r.color }} />
                           <span className="font-medium">{r.name}</span>
                         </div>
-                        <Badge tone="success">{bus.etaMin} {t("min")}</Badge>
+                        <Badge tone="success">
+                          {bus.etaMin} {t("min")}
+                        </Badge>
                       </div>
                       <div className="mt-1 text-xs text-white/70">
                         {bus.label} · {bus.taken}/{bus.seats} {t("seats")}

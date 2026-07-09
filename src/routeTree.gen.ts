@@ -16,7 +16,19 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuditorRouteImport } from './routes/auditor'
 import { Route as AdvertiserRouteImport } from './routes/advertiser'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApiUploadsAvatarRouteImport } from './routes/api/uploads/avatar'
+import { Route as ApiUploadsAvatarIdRouteImport } from './routes/api/uploads/avatar/$id'
 
+const ApiUploadsAvatarRoute = ApiUploadsAvatarRouteImport.update({
+  id: '/api/uploads/avatar',
+  path: '/api/uploads/avatar',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiUploadsAvatarIdRoute = ApiUploadsAvatarIdRouteImport.update({
+  id: '/api/uploads/avatar/$id',
+  path: '/api/uploads/avatar/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
   path: '/signup',
@@ -61,6 +73,8 @@ export interface FileRoutesByFullPath {
   '/owner': typeof OwnerRoute
   '/passenger': typeof PassengerRoute
   '/signup': typeof SignupRoute
+  '/api/uploads/avatar': typeof ApiUploadsAvatarRoute
+  '/api/uploads/avatar/$id': typeof ApiUploadsAvatarIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -70,6 +84,8 @@ export interface FileRoutesByTo {
   '/owner': typeof OwnerRoute
   '/passenger': typeof PassengerRoute
   '/signup': typeof SignupRoute
+  '/api/uploads/avatar': typeof ApiUploadsAvatarRoute
+  '/api/uploads/avatar/$id': typeof ApiUploadsAvatarIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -80,6 +96,8 @@ export interface FileRoutesById {
   '/owner': typeof OwnerRoute
   '/passenger': typeof PassengerRoute
   '/signup': typeof SignupRoute
+  '/api/uploads/avatar': typeof ApiUploadsAvatarRoute
+  '/api/uploads/avatar/$id': typeof ApiUploadsAvatarIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -91,6 +109,8 @@ export interface FileRouteTypes {
     | '/owner'
     | '/passenger'
     | '/signup'
+    | '/api/uploads/avatar'
+    | '/api/uploads/avatar/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -100,6 +120,8 @@ export interface FileRouteTypes {
     | '/owner'
     | '/passenger'
     | '/signup'
+    | '/api/uploads/avatar'
+    | '/api/uploads/avatar/$id'
   id:
     | '__root__'
     | '/'
@@ -109,6 +131,8 @@ export interface FileRouteTypes {
     | '/owner'
     | '/passenger'
     | '/signup'
+    | '/api/uploads/avatar'
+    | '/api/uploads/avatar/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -119,6 +143,8 @@ export interface RootRouteChildren {
   OwnerRoute: typeof OwnerRoute
   PassengerRoute: typeof PassengerRoute
   SignupRoute: typeof SignupRoute
+  ApiUploadsAvatarRoute: typeof ApiUploadsAvatarRoute
+  ApiUploadsAvatarIdRoute: typeof ApiUploadsAvatarIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -172,6 +198,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/uploads/avatar': {
+      id: '/api/uploads/avatar'
+      path: '/api/uploads/avatar'
+      fullPath: '/api/uploads/avatar'
+      preLoaderRoute: typeof ApiUploadsAvatarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/uploads/avatar/$id': {
+      id: '/api/uploads/avatar/$id'
+      path: '/api/uploads/avatar/$id'
+      fullPath: '/api/uploads/avatar/$id'
+      preLoaderRoute: typeof ApiUploadsAvatarIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -183,6 +223,8 @@ const rootRouteChildren: RootRouteChildren = {
   OwnerRoute: OwnerRoute,
   PassengerRoute: PassengerRoute,
   SignupRoute: SignupRoute,
+  ApiUploadsAvatarRoute: ApiUploadsAvatarRoute,
+  ApiUploadsAvatarIdRoute: ApiUploadsAvatarIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -18,12 +18,24 @@ function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState<Role>("passenger");
+  const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) return;
-    login(email, role);
-    nav({ to: `/${role}` as any });
+    if (!email || !password || submitting) return;
+    setError(null);
+    setSubmitting(true);
+    try {
+      const user = await login(email, password);
+      // Navigate based on the account's actual role, not the cosmetic tab
+      // selected on this form — the server is the source of truth for role.
+      nav({ to: `/${user.role}` as any });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Login failed");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -37,8 +49,19 @@ function LoginPage() {
             <RoleTabs role={role} setRole={setRole} />
             <Field label={t("email")} type="email" value={email} onChange={setEmail} />
             <Field label={t("password")} type="password" value={password} onChange={setPassword} />
-            <button className="w-full py-3 rounded-xl bg-white text-slate-900 font-semibold hover:scale-[1.02] transition">
-              {t("continue")}
+            {error && (
+              <p
+                role="alert"
+                className="text-sm text-red-200 bg-red-500/20 border border-red-400/30 rounded-lg px-3 py-2"
+              >
+                {error}
+              </p>
+            )}
+            <button
+              disabled={submitting}
+              className="w-full py-3 rounded-xl bg-white text-slate-900 font-semibold hover:scale-[1.02] transition disabled:opacity-60 disabled:hover:scale-100"
+            >
+              {submitting ? "…" : t("continue")}
             </button>
           </form>
         </GlassCard>
