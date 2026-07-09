@@ -111,6 +111,43 @@ db.exec(`
     size INTEGER NOT NULL,
     created_at INTEGER NOT NULL
   );
+
+  -- Target headway (minutes) between consecutive buses on a route, set by
+  -- the bus auditor; the owner/driver dashboard reads this to know the
+  -- interval they should be keeping.
+  CREATE TABLE IF NOT EXISTS route_intervals (
+    route_id TEXT PRIMARY KEY,
+    interval_minutes INTEGER NOT NULL,
+    updated_by TEXT NOT NULL REFERENCES users(id),
+    updated_at INTEGER NOT NULL
+  );
+
+  -- Lateness penalties an auditor issues against a bus at a checkpoint.
+  CREATE TABLE IF NOT EXISTS penalties (
+    id TEXT PRIMARY KEY,
+    bus_id TEXT NOT NULL,
+    route_id TEXT NOT NULL,
+    auditor_id TEXT NOT NULL REFERENCES users(id),
+    reason TEXT NOT NULL,
+    minutes_late INTEGER NOT NULL,
+    created_at INTEGER NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_penalties_bus ON penalties(bus_id);
+
+  -- One rating per (bus, passenger). passenger_id is kept for abuse
+  -- prevention (rate limiting, one rating per ride) but is never returned
+  -- by any owner/auditor-facing endpoint — only the aggregate is exposed,
+  -- so the passenger's identity stays hidden from the driver/owner.
+  CREATE TABLE IF NOT EXISTS ratings (
+    id TEXT PRIMARY KEY,
+    bus_id TEXT NOT NULL,
+    passenger_id TEXT NOT NULL REFERENCES users(id),
+    rating INTEGER NOT NULL CHECK (rating BETWEEN 1 AND 5),
+    comment TEXT,
+    created_at INTEGER NOT NULL,
+    UNIQUE (bus_id, passenger_id)
+  );
+  CREATE INDEX IF NOT EXISTS idx_ratings_bus ON ratings(bus_id);
 `);
 
 export type UserRow = {
@@ -170,6 +207,53 @@ const stmts = {
     },
     [string]
   >(`SELECT * FROM avatar_uploads WHERE id = ?`),
+
+  upsertRouteInterval: db.prepare(
+    `INSERT INTO route_intervals (route_id, interval_minutes, updated_by, updated_at) VALUES (?, ?, ?, ?)
+     ON CONFLICT (route_id) DO UPDATE SET interval_minutes = excluded.interval_minutes, updated_by = excluded.updated_by, updated_at = excluded.updated_at`,
+  ),
+  listRouteIntervals: db.prepare<
+    { route_id: string; interval_minutes: number; updated_at: number },
+    []
+  >(`SELECT route_id, interval_minutes, updated_at FROM route_intervals`),
+
+  insertPenalty: db.prepare(
+    `INSERT INTO penalties (id, bus_id, route_id, auditor_id, reason, minutes_late, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+  ),
+  listPenaltiesByBus: db.prepare<
+    {
+      id: string;
+      bus_id: string;
+      route_id: string;
+      reason: string;
+      minutes_late: number;
+      created_at: number;
+    },
+    [string]
+  >(
+    `SELECT id, bus_id, route_id, reason, minutes_late, created_at FROM penalties WHERE bus_id = ? ORDER BY created_at DESC LIMIT 50`,
+  ),
+  listAllPenalties: db.prepare<
+    {
+      id: string;
+      bus_id: string;
+      route_id: string;
+      reason: string;
+      minutes_late: number;
+      created_at: number;
+    },
+    []
+  >(
+    `SELECT id, bus_id, route_id, reason, minutes_late, created_at FROM penalties ORDER BY created_at DESC LIMIT 100`,
+  ),
+
+  upsertRating: db.prepare(
+    `INSERT INTO ratings (id, bus_id, passenger_id, rating, comment, created_at) VALUES (?, ?, ?, ?, ?, ?)
+     ON CONFLICT (bus_id, passenger_id) DO UPDATE SET rating = excluded.rating, comment = excluded.comment, created_at = excluded.created_at`,
+  ),
+  ratingSummaryForBus: db.prepare<{ avg_rating: number | null; count: number }, [string]>(
+    `SELECT AVG(rating) as avg_rating, COUNT(*) as count FROM ratings WHERE bus_id = ?`,
+  ),
 };
 
 export function insertUser(user: {
@@ -251,4 +335,61 @@ export function insertAvatarUpload(entry: {
 
 export function findAvatarUploadById(id: string) {
   return stmts.findAvatarUploadById.get(id);
+}
+
+export function setRouteInterval(routeId: string, intervalMinutes: number, updatedBy: string) {
+  stmts.upsertRouteInterval.run(routeId, intervalMinutes, updatedBy, Date.now());
+}
+
+export function listRouteIntervals() {
+  return stmts.listRouteIntervals.all();
+}
+
+export function insertPenalty(entry: {
+  id: string;
+  busId: string;
+  routeId: string;
+  auditorId: string;
+  reason: string;
+  minutesLate: number;
+}) {
+  stmts.insertPenalty.run(
+    entry.id,
+    entry.busId,
+    entry.routeId,
+    entry.auditorId,
+    entry.reason,
+    entry.minutesLate,
+    Date.now(),
+  );
+}
+
+export function listPenaltiesByBus(busId: string) {
+  return stmts.listPenaltiesByBus.all(busId);
+}
+
+export function listAllPenalties() {
+  return stmts.listAllPenalties.all();
+}
+
+export function upsertRating(entry: {
+  id: string;
+  busId: string;
+  passengerId: string;
+  rating: number;
+  comment: string | null;
+}) {
+  stmts.upsertRating.run(
+    entry.id,
+    entry.busId,
+    entry.passengerId,
+    entry.rating,
+    entry.comment,
+    Date.now(),
+  );
+}
+
+export function getRatingSummary(busId: string): { avgRating: number | null; count: number } {
+  const row = stmts.ratingSummaryForBus.get(busId);
+  return { avgRating: row?.avg_rating ?? null, count: row?.count ?? 0 };
 }
