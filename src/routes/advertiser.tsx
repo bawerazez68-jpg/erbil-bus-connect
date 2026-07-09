@@ -8,6 +8,7 @@ import { Progress } from "@/components/Progress";
 import { MapView } from "@/components/MapView";
 import { CAMPAIGNS } from "@/lib/mockData";
 import { useI18n } from "@/lib/i18n";
+import { useRequireRole } from "@/lib/auth";
 
 export const Route = createFileRoute("/advertiser")({
   head: () => ({ meta: [{ title: "Advertiser — Bbina" }] }),
@@ -16,9 +17,11 @@ export const Route = createFileRoute("/advertiser")({
 
 function AdvertiserPage() {
   const { t } = useI18n();
+  const { user, isLoading } = useRequireRole("advertiser");
   const totalImp = CAMPAIGNS.reduce((s, c) => s + c.impressions, 0);
   const totalClicks = CAMPAIGNS.reduce((s, c) => s + c.clicks, 0);
   const totalSpent = CAMPAIGNS.reduce((s, c) => s + c.spent, 0);
+  if (isLoading || user?.role !== "advertiser") return null;
   return (
     <AnimatedGradient theme="advertiser">
       <AppHeader />
@@ -26,7 +29,11 @@ function AdvertiserPage() {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <Stat label={t("campaigns")} value={CAMPAIGNS.length} />
           <Stat label={t("impressions")} value={totalImp.toLocaleString()} />
-          <Stat label={t("clicks")} value={totalClicks.toLocaleString()} sub={`${((totalClicks / totalImp) * 100).toFixed(2)}% CTR`} />
+          <Stat
+            label={t("clicks")}
+            value={totalClicks.toLocaleString()}
+            sub={`${((totalClicks / totalImp) * 100).toFixed(2)}% CTR`}
+          />
           <Stat label={t("budget")} value={`$${totalSpent}`} />
         </div>
 
@@ -53,8 +60,12 @@ function AdvertiserPage() {
                       </Badge>
                     </div>
                     <div className="mt-2 grid grid-cols-2 gap-2 text-xs text-white/80">
-                      <div>{t("impressions")}: {c.impressions.toLocaleString()}</div>
-                      <div>{t("clicks")}: {c.clicks.toLocaleString()}</div>
+                      <div>
+                        {t("impressions")}: {c.impressions.toLocaleString()}
+                      </div>
+                      <div>
+                        {t("clicks")}: {c.clicks.toLocaleString()}
+                      </div>
                     </div>
                     <div className="mt-2">
                       <Progress value={pct} color="bg-fuchsia-300" />

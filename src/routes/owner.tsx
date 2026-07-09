@@ -8,6 +8,7 @@ import { Progress } from "@/components/Progress";
 import { MapView } from "@/components/MapView";
 import { BUSES, ROUTES } from "@/lib/mockData";
 import { useI18n } from "@/lib/i18n";
+import { useRequireRole } from "@/lib/auth";
 
 export const Route = createFileRoute("/owner")({
   head: () => ({ meta: [{ title: "Owner — Bbina" }] }),
@@ -16,8 +17,10 @@ export const Route = createFileRoute("/owner")({
 
 function OwnerPage() {
   const { t } = useI18n();
+  const { user, isLoading } = useRequireRole("owner");
   const totalSeats = BUSES.reduce((s, b) => s + b.seats, 0);
   const taken = BUSES.reduce((s, b) => s + b.taken, 0);
+  if (isLoading || user?.role !== "owner") return null;
   return (
     <AnimatedGradient theme="owner">
       <AppHeader />
@@ -51,7 +54,8 @@ function OwnerPage() {
                       <Badge tone="success">{t("active")}</Badge>
                     </div>
                     <div className="text-xs text-white/70 mt-1 flex items-center gap-1">
-                      <span className="w-2 h-2 rounded-full" style={{ background: r.color }} /> {r.name}
+                      <span className="w-2 h-2 rounded-full" style={{ background: r.color }} />{" "}
+                      {r.name}
                     </div>
                     <div className="mt-2">
                       <Progress value={pct} color="bg-amber-300" />

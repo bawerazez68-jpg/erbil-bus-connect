@@ -9,6 +9,7 @@ import { Progress } from "@/components/Progress";
 import { MapView } from "@/components/MapView";
 import { AUDIT_ALERTS, BUSES, ROUTES, type AuditAlert } from "@/lib/mockData";
 import { useI18n } from "@/lib/i18n";
+import { useRequireRole } from "@/lib/auth";
 
 export const Route = createFileRoute("/auditor")({
   head: () => ({ meta: [{ title: "Auditor — Bbina" }] }),
@@ -17,17 +18,26 @@ export const Route = createFileRoute("/auditor")({
 
 function AuditorPage() {
   const { t } = useI18n();
+  const { user, isLoading } = useRequireRole("auditor");
   const [alerts, setAlerts] = useState<AuditAlert[]>(AUDIT_ALERTS);
   const [focus, setFocus] = useState<string | null>(null);
 
   const open = alerts.filter((a) => a.status === "open");
-  const onRoute = BUSES.length - new Set(open.filter((a) => a.type === "deviation").map((a) => a.busId)).size;
-  const integrity = Math.max(0, 100 - open.reduce((s, a) => s + (a.severity === "high" ? 12 : a.severity === "medium" ? 6 : 2), 0));
+  const onRoute =
+    BUSES.length - new Set(open.filter((a) => a.type === "deviation").map((a) => a.busId)).size;
+  const integrity = Math.max(
+    0,
+    100 -
+      open.reduce((s, a) => s + (a.severity === "high" ? 12 : a.severity === "medium" ? 6 : 2), 0),
+  );
 
   const clear = (id: string) =>
     setAlerts((xs) => xs.map((a) => (a.id === id ? { ...a, status: "cleared" } : a)));
 
-  const sevTone = (s: AuditAlert["severity"]) => (s === "high" ? "danger" : s === "medium" ? "warn" : "default");
+  const sevTone = (s: AuditAlert["severity"]) =>
+    s === "high" ? "danger" : s === "medium" ? "warn" : "default";
+
+  if (isLoading || user?.role !== "auditor") return null;
 
   return (
     <AnimatedGradient theme="auditor">
@@ -36,7 +46,10 @@ function AuditorPage() {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <Stat label={t("onRoute")} value={`${onRoute}/${BUSES.length}`} />
           <Stat label={t("flagged")} value={open.length} />
-          <Stat label={t("ghostRider")} value={open.filter((a) => a.type === "ghost").reduce((s) => s + 5, 0)} />
+          <Stat
+            label={t("ghostRider")}
+            value={open.filter((a) => a.type === "ghost").reduce((s) => s + 5, 0)}
+          />
           <Stat label={t("integrityScore")} value={`${integrity}%`} />
         </div>
 
@@ -47,7 +60,9 @@ function AuditorPage() {
           <GlassCard className="p-4">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold">{t("recentAlerts")}</h2>
-              <Badge tone="warn">{open.length} {t("flagged")}</Badge>
+              <Badge tone="warn">
+                {open.length} {t("flagged")}
+              </Badge>
             </div>
             <p className="text-xs text-white/70 mt-1">{t("auditDesc")}</p>
             <ul className="mt-3 space-y-3 max-h-[400px] overflow-auto">
@@ -61,14 +76,26 @@ function AuditorPage() {
                     className="p-3 rounded-xl bg-white/10 border border-white/20"
                   >
                     <div className="flex justify-between items-center">
-                      <span className="font-medium text-sm">{a.busId} · {r.name}</span>
+                      <span className="font-medium text-sm">
+                        {a.busId} · {r.name}
+                      </span>
                       <Badge tone={a.status === "cleared" ? "success" : sevTone(a.severity)}>
-                        {a.status === "cleared" ? t("cleared") : t(a.type === "deviation" ? "deviation" : a.type === "ghost" ? "ghostRider" : "offRoute")}
+                        {a.status === "cleared"
+                          ? t("cleared")
+                          : t(
+                              a.type === "deviation"
+                                ? "deviation"
+                                : a.type === "ghost"
+                                  ? "ghostRider"
+                                  : "offRoute",
+                            )}
                       </Badge>
                     </div>
                     <div className="text-xs text-white/80 mt-1">{a.note}</div>
                     <div className="mt-2 flex items-center justify-between text-xs text-white/60">
-                      <span>{a.minutesAgo} {t("min")}</span>
+                      <span>
+                        {a.minutesAgo} {t("min")}
+                      </span>
                       {a.status === "open" && (
                         <button
                           onClick={() => clear(a.id)}

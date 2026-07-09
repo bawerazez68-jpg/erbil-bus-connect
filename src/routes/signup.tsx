@@ -20,12 +20,22 @@ function SignupPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState<Role>("passenger");
+  const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || !email || !password) return;
-    signup(name, email, role);
-    nav({ to: `/${role}` as any });
+    if (!name || !email || !password || submitting) return;
+    setError(null);
+    setSubmitting(true);
+    try {
+      const user = await signup(name, email, password, role);
+      nav({ to: `/${user.role}` as any });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Sign up failed");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -40,8 +50,22 @@ function SignupPage() {
             <Field label={t("name")} value={name} onChange={setName} />
             <Field label={t("email")} type="email" value={email} onChange={setEmail} />
             <Field label={t("password")} type="password" value={password} onChange={setPassword} />
-            <button className="w-full py-3 rounded-xl bg-white text-slate-900 font-semibold hover:scale-[1.02] transition">
-              {t("continue")}
+            <p className="text-xs text-white/60 -mt-2">
+              At least 10 characters, with a letter and a number.
+            </p>
+            {error && (
+              <p
+                role="alert"
+                className="text-sm text-red-200 bg-red-500/20 border border-red-400/30 rounded-lg px-3 py-2"
+              >
+                {error}
+              </p>
+            )}
+            <button
+              disabled={submitting}
+              className="w-full py-3 rounded-xl bg-white text-slate-900 font-semibold hover:scale-[1.02] transition disabled:opacity-60 disabled:hover:scale-100"
+            >
+              {submitting ? "…" : t("continue")}
             </button>
           </form>
         </GlassCard>
