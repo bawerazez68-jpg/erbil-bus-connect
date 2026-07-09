@@ -17,18 +17,13 @@ import { Route as AuditorRouteImport } from './routes/auditor'
 import { Route as AdvertiserRouteImport } from './routes/advertiser'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiUploadsAvatarRouteImport } from './routes/api/uploads/avatar'
+import { Route as ApiAuthSignupRouteImport } from './routes/api/auth/signup'
+import { Route as ApiAuthRefreshRouteImport } from './routes/api/auth/refresh'
+import { Route as ApiAuthMeRouteImport } from './routes/api/auth/me'
+import { Route as ApiAuthLogoutRouteImport } from './routes/api/auth/logout'
+import { Route as ApiAuthLoginRouteImport } from './routes/api/auth/login'
 import { Route as ApiUploadsAvatarIdRouteImport } from './routes/api/uploads/avatar/$id'
 
-const ApiUploadsAvatarRoute = ApiUploadsAvatarRouteImport.update({
-  id: '/api/uploads/avatar',
-  path: '/api/uploads/avatar',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiUploadsAvatarIdRoute = ApiUploadsAvatarIdRouteImport.update({
-  id: '/api/uploads/avatar/$id',
-  path: '/api/uploads/avatar/$id',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
   path: '/signup',
@@ -64,6 +59,41 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiUploadsAvatarRoute = ApiUploadsAvatarRouteImport.update({
+  id: '/api/uploads/avatar',
+  path: '/api/uploads/avatar',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAuthSignupRoute = ApiAuthSignupRouteImport.update({
+  id: '/api/auth/signup',
+  path: '/api/auth/signup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAuthRefreshRoute = ApiAuthRefreshRouteImport.update({
+  id: '/api/auth/refresh',
+  path: '/api/auth/refresh',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAuthMeRoute = ApiAuthMeRouteImport.update({
+  id: '/api/auth/me',
+  path: '/api/auth/me',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAuthLogoutRoute = ApiAuthLogoutRouteImport.update({
+  id: '/api/auth/logout',
+  path: '/api/auth/logout',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAuthLoginRoute = ApiAuthLoginRouteImport.update({
+  id: '/api/auth/login',
+  path: '/api/auth/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiUploadsAvatarIdRoute = ApiUploadsAvatarIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => ApiUploadsAvatarRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -73,7 +103,12 @@ export interface FileRoutesByFullPath {
   '/owner': typeof OwnerRoute
   '/passenger': typeof PassengerRoute
   '/signup': typeof SignupRoute
-  '/api/uploads/avatar': typeof ApiUploadsAvatarRoute
+  '/api/auth/login': typeof ApiAuthLoginRoute
+  '/api/auth/logout': typeof ApiAuthLogoutRoute
+  '/api/auth/me': typeof ApiAuthMeRoute
+  '/api/auth/refresh': typeof ApiAuthRefreshRoute
+  '/api/auth/signup': typeof ApiAuthSignupRoute
+  '/api/uploads/avatar': typeof ApiUploadsAvatarRouteWithChildren
   '/api/uploads/avatar/$id': typeof ApiUploadsAvatarIdRoute
 }
 export interface FileRoutesByTo {
@@ -84,7 +119,12 @@ export interface FileRoutesByTo {
   '/owner': typeof OwnerRoute
   '/passenger': typeof PassengerRoute
   '/signup': typeof SignupRoute
-  '/api/uploads/avatar': typeof ApiUploadsAvatarRoute
+  '/api/auth/login': typeof ApiAuthLoginRoute
+  '/api/auth/logout': typeof ApiAuthLogoutRoute
+  '/api/auth/me': typeof ApiAuthMeRoute
+  '/api/auth/refresh': typeof ApiAuthRefreshRoute
+  '/api/auth/signup': typeof ApiAuthSignupRoute
+  '/api/uploads/avatar': typeof ApiUploadsAvatarRouteWithChildren
   '/api/uploads/avatar/$id': typeof ApiUploadsAvatarIdRoute
 }
 export interface FileRoutesById {
@@ -96,7 +136,12 @@ export interface FileRoutesById {
   '/owner': typeof OwnerRoute
   '/passenger': typeof PassengerRoute
   '/signup': typeof SignupRoute
-  '/api/uploads/avatar': typeof ApiUploadsAvatarRoute
+  '/api/auth/login': typeof ApiAuthLoginRoute
+  '/api/auth/logout': typeof ApiAuthLogoutRoute
+  '/api/auth/me': typeof ApiAuthMeRoute
+  '/api/auth/refresh': typeof ApiAuthRefreshRoute
+  '/api/auth/signup': typeof ApiAuthSignupRoute
+  '/api/uploads/avatar': typeof ApiUploadsAvatarRouteWithChildren
   '/api/uploads/avatar/$id': typeof ApiUploadsAvatarIdRoute
 }
 export interface FileRouteTypes {
@@ -109,6 +154,11 @@ export interface FileRouteTypes {
     | '/owner'
     | '/passenger'
     | '/signup'
+    | '/api/auth/login'
+    | '/api/auth/logout'
+    | '/api/auth/me'
+    | '/api/auth/refresh'
+    | '/api/auth/signup'
     | '/api/uploads/avatar'
     | '/api/uploads/avatar/$id'
   fileRoutesByTo: FileRoutesByTo
@@ -120,6 +170,11 @@ export interface FileRouteTypes {
     | '/owner'
     | '/passenger'
     | '/signup'
+    | '/api/auth/login'
+    | '/api/auth/logout'
+    | '/api/auth/me'
+    | '/api/auth/refresh'
+    | '/api/auth/signup'
     | '/api/uploads/avatar'
     | '/api/uploads/avatar/$id'
   id:
@@ -131,6 +186,11 @@ export interface FileRouteTypes {
     | '/owner'
     | '/passenger'
     | '/signup'
+    | '/api/auth/login'
+    | '/api/auth/logout'
+    | '/api/auth/me'
+    | '/api/auth/refresh'
+    | '/api/auth/signup'
     | '/api/uploads/avatar'
     | '/api/uploads/avatar/$id'
   fileRoutesById: FileRoutesById
@@ -143,8 +203,12 @@ export interface RootRouteChildren {
   OwnerRoute: typeof OwnerRoute
   PassengerRoute: typeof PassengerRoute
   SignupRoute: typeof SignupRoute
-  ApiUploadsAvatarRoute: typeof ApiUploadsAvatarRoute
-  ApiUploadsAvatarIdRoute: typeof ApiUploadsAvatarIdRoute
+  ApiAuthLoginRoute: typeof ApiAuthLoginRoute
+  ApiAuthLogoutRoute: typeof ApiAuthLogoutRoute
+  ApiAuthMeRoute: typeof ApiAuthMeRoute
+  ApiAuthRefreshRoute: typeof ApiAuthRefreshRoute
+  ApiAuthSignupRoute: typeof ApiAuthSignupRoute
+  ApiUploadsAvatarRoute: typeof ApiUploadsAvatarRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
@@ -205,15 +269,61 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiUploadsAvatarRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/auth/signup': {
+      id: '/api/auth/signup'
+      path: '/api/auth/signup'
+      fullPath: '/api/auth/signup'
+      preLoaderRoute: typeof ApiAuthSignupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/auth/refresh': {
+      id: '/api/auth/refresh'
+      path: '/api/auth/refresh'
+      fullPath: '/api/auth/refresh'
+      preLoaderRoute: typeof ApiAuthRefreshRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/auth/me': {
+      id: '/api/auth/me'
+      path: '/api/auth/me'
+      fullPath: '/api/auth/me'
+      preLoaderRoute: typeof ApiAuthMeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/auth/logout': {
+      id: '/api/auth/logout'
+      path: '/api/auth/logout'
+      fullPath: '/api/auth/logout'
+      preLoaderRoute: typeof ApiAuthLogoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/auth/login': {
+      id: '/api/auth/login'
+      path: '/api/auth/login'
+      fullPath: '/api/auth/login'
+      preLoaderRoute: typeof ApiAuthLoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/uploads/avatar/$id': {
       id: '/api/uploads/avatar/$id'
-      path: '/api/uploads/avatar/$id'
+      path: '/$id'
       fullPath: '/api/uploads/avatar/$id'
       preLoaderRoute: typeof ApiUploadsAvatarIdRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof ApiUploadsAvatarRoute
     }
   }
 }
+
+interface ApiUploadsAvatarRouteChildren {
+  ApiUploadsAvatarIdRoute: typeof ApiUploadsAvatarIdRoute
+}
+
+const ApiUploadsAvatarRouteChildren: ApiUploadsAvatarRouteChildren = {
+  ApiUploadsAvatarIdRoute: ApiUploadsAvatarIdRoute,
+}
+
+const ApiUploadsAvatarRouteWithChildren =
+  ApiUploadsAvatarRoute._addFileChildren(ApiUploadsAvatarRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
@@ -223,9 +333,23 @@ const rootRouteChildren: RootRouteChildren = {
   OwnerRoute: OwnerRoute,
   PassengerRoute: PassengerRoute,
   SignupRoute: SignupRoute,
-  ApiUploadsAvatarRoute: ApiUploadsAvatarRoute,
-  ApiUploadsAvatarIdRoute: ApiUploadsAvatarIdRoute,
+  ApiAuthLoginRoute: ApiAuthLoginRoute,
+  ApiAuthLogoutRoute: ApiAuthLogoutRoute,
+  ApiAuthMeRoute: ApiAuthMeRoute,
+  ApiAuthRefreshRoute: ApiAuthRefreshRoute,
+  ApiAuthSignupRoute: ApiAuthSignupRoute,
+  ApiUploadsAvatarRoute: ApiUploadsAvatarRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

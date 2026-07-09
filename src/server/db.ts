@@ -1,18 +1,76 @@
-import { Database } from "bun:sqlite";
 import { mkdirSync } from "node:fs";
 import path from "node:path";
 import type { Role } from "@/lib/auth";
 
-// Local SQLite database (bun:sqlite is built into the Bun runtime — no
-// external dependency, so it works even when the package registry is
-// unreachable). Deploying to an edge runtime without a persistent
-// filesystem (e.g. Cloudflare Workers/D1) would need a different storage
-// backend; this is fine for a Node/Bun server deployment.
+// Runtime-adaptive SQLite: uses bun:sqlite when actually running under Bun,
+// and Node's built-in node:sqlite otherwise (e.g. Vite's SSR dev pipeline
+// runs isolated modules through a plain Node ESM loader that doesn't
+// understand the `bun:` URL scheme, and a production build may well be
+// started with `node .output/server/index.mjs` rather than `bun`). Both are
+// runtime built-ins — no external dependency, so this works even when the
+// package registry is unreachable. Deploying to an edge runtime without a
+// persistent filesystem (e.g. Cloudflare Workers) would need a different
+// storage backend (D1, etc.) instead of a local file.
+
+type Row = Record<string, unknown>;
+
+interface PreparedStatement<T, P extends readonly unknown[]> {
+  get(...params: P): T | null;
+  all(...params: P): T[];
+  run(...params: P): void;
+}
+
+interface SqliteHandle {
+  exec(sql: string): void;
+  prepare<T = Row, P extends readonly unknown[] = unknown[]>(sql: string): PreparedStatement<T, P>;
+}
+
+async function openDatabase(filename: string): Promise<SqliteHandle> {
+  if (typeof (globalThis as { Bun?: unknown }).Bun !== "undefined") {
+    const { Database } = await import("bun:sqlite");
+    const raw = new Database(filename);
+    return {
+      exec: (sql) => raw.exec(sql),
+      prepare: <T, P extends readonly unknown[]>(sql: string) => {
+        const stmt = raw.query<T, P>(sql);
+        return {
+          get: (...params: P) => stmt.get(...params) ?? null,
+          all: (...params: P) => stmt.all(...params),
+          run: (...params: P) => {
+            stmt.run(...params);
+          },
+        };
+      },
+    };
+  }
+
+  const { DatabaseSync } = await import("node:sqlite");
+  const raw = new DatabaseSync(filename);
+  return {
+    exec: (sql) => raw.exec(sql),
+    prepare: <T, P extends readonly unknown[]>(sql: string) => {
+      const stmt = raw.prepare(sql);
+      // node:sqlite's SQLInputValue is narrower than `unknown` — this glue
+      // code crosses from our generic param type into its concrete one, so
+      // a double cast through `any` is the pragmatic choice here.
+      return {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        get: (...params: P) => (stmt.get(...(params as unknown as any[])) as T | undefined) ?? null,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        all: (...params: P) => stmt.all(...(params as unknown as any[])) as T[],
+        run: (...params: P) => {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          stmt.run(...(params as unknown as any[]));
+        },
+      };
+    },
+  };
+}
 
 const dataDir = path.join(process.cwd(), "data");
 mkdirSync(dataDir, { recursive: true });
 
-const db = new Database(path.join(dataDir, "app.db"));
+const db = await openDatabase(path.join(dataDir, "app.db"));
 db.exec("PRAGMA journal_mode = WAL;");
 db.exec("PRAGMA foreign_keys = ON;");
 
@@ -68,18 +126,18 @@ export type UserRow = {
 // string-concatenate user input into SQL.
 
 const stmts = {
-  insertUser: db.query(
+  insertUser: db.prepare(
     `INSERT INTO users (id, name, email, password_hash, role, created_at) VALUES (?, ?, ?, ?, ?, ?)`,
   ),
-  findUserByEmail: db.query<UserRow, [string]>(
+  findUserByEmail: db.prepare<UserRow, [string]>(
     `SELECT * FROM users WHERE email = ? COLLATE NOCASE`,
   ),
-  findUserById: db.query<UserRow, [string]>(`SELECT * FROM users WHERE id = ?`),
+  findUserById: db.prepare<UserRow, [string]>(`SELECT * FROM users WHERE id = ?`),
 
-  insertRefreshToken: db.query(
+  insertRefreshToken: db.prepare(
     `INSERT INTO refresh_tokens (id, user_id, token_hash, expires_at, created_at) VALUES (?, ?, ?, ?, ?)`,
   ),
-  findRefreshTokenByHash: db.query<
+  findRefreshTokenByHash: db.prepare<
     {
       id: string;
       user_id: string;
@@ -89,19 +147,19 @@ const stmts = {
     },
     [string]
   >(`SELECT * FROM refresh_tokens WHERE token_hash = ?`),
-  revokeRefreshToken: db.query(`UPDATE refresh_tokens SET revoked_at = ? WHERE id = ?`),
-  revokeAllRefreshTokensForUser: db.query(
+  revokeRefreshToken: db.prepare(`UPDATE refresh_tokens SET revoked_at = ? WHERE id = ?`),
+  revokeAllRefreshTokensForUser: db.prepare(
     `UPDATE refresh_tokens SET revoked_at = ? WHERE user_id = ? AND revoked_at IS NULL`,
   ),
 
-  insertAuditLog: db.query(
+  insertAuditLog: db.prepare(
     `INSERT INTO audit_logs (event_type, user_id, ip_encrypted, detail, created_at) VALUES (?, ?, ?, ?, ?)`,
   ),
 
-  insertAvatarUpload: db.query(
+  insertAvatarUpload: db.prepare(
     `INSERT INTO avatar_uploads (id, user_id, filename, mime, size, created_at) VALUES (?, ?, ?, ?, ?, ?)`,
   ),
-  findAvatarUploadById: db.query<
+  findAvatarUploadById: db.prepare<
     {
       id: string;
       user_id: string;
@@ -125,11 +183,11 @@ export function insertUser(user: {
 }
 
 export function findUserByEmail(email: string): UserRow | null {
-  return (stmts.findUserByEmail.get(email) as UserRow | null) ?? null;
+  return stmts.findUserByEmail.get(email);
 }
 
 export function findUserById(id: string): UserRow | null {
-  return (stmts.findUserById.get(id) as UserRow | null) ?? null;
+  return stmts.findUserById.get(id);
 }
 
 export function insertRefreshToken(entry: {
@@ -148,7 +206,7 @@ export function insertRefreshToken(entry: {
 }
 
 export function findRefreshTokenByHash(tokenHash: string) {
-  return stmts.findRefreshTokenByHash.get(tokenHash) ?? null;
+  return stmts.findRefreshTokenByHash.get(tokenHash);
 }
 
 export function revokeRefreshToken(id: string) {
@@ -192,5 +250,5 @@ export function insertAvatarUpload(entry: {
 }
 
 export function findAvatarUploadById(id: string) {
-  return stmts.findAvatarUploadById.get(id) ?? null;
+  return stmts.findAvatarUploadById.get(id);
 }
