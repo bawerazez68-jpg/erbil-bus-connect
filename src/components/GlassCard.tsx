@@ -1,11 +1,18 @@
 import type { ReactNode } from "react";
 
-export function GlassCard({ children, className = "" }: { children: ReactNode; className?: string }) {
+export function GlassCard({
+  children,
+  className = "",
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
   return (
     <div
-      className={`rounded-2xl bg-white/10 backdrop-blur-xl border border-white/20 shadow-2xl text-white ${className}`}
+      className={`relative overflow-hidden rounded-3xl border border-white/25 bg-white/10 text-white shadow-2xl shadow-black/30 [backdrop-filter:blur(24px)_saturate(180%)] ${className}`}
     >
-      {children}
+      <div className="pointer-events-none absolute -left-1/5 -top-1/2 h-[140%] w-[140%] bg-gradient-to-br from-white/15 via-transparent to-transparent" />
+      <div className="relative">{children}</div>
     </div>
   );
 }
