@@ -87,3 +87,7 @@ export const createAdSchema = z.object({
 export const adStatusSchema = z.object({
   status: z.enum(["active", "paused"]),
 });
+
+export const assignRouteSchema = z.object({
+  routeId: z.string().min(1).max(64),
+});

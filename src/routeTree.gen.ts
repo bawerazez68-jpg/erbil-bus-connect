@@ -27,6 +27,7 @@ import { Route as ApiAuthRefreshRouteImport } from './routes/api/auth/refresh'
 import { Route as ApiAuthMeRouteImport } from './routes/api/auth/me'
 import { Route as ApiAuthLogoutRouteImport } from './routes/api/auth/logout'
 import { Route as ApiAuthLoginRouteImport } from './routes/api/auth/login'
+import { Route as ApiAuditorAssignRouteImport } from './routes/api/auditor/assign'
 import { Route as ApiAdsMineRouteImport } from './routes/api/ads/mine'
 import { Route as ApiAdsIdIndexRouteImport } from './routes/api/ads/$id/index'
 import { Route as ApiUploadsAvatarIdRouteImport } from './routes/api/uploads/avatar/$id'
@@ -125,6 +126,11 @@ const ApiAuthLoginRoute = ApiAuthLoginRouteImport.update({
   path: '/api/auth/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAuditorAssignRoute = ApiAuditorAssignRouteImport.update({
+  id: '/api/auditor/assign',
+  path: '/api/auditor/assign',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiAdsMineRoute = ApiAdsMineRouteImport.update({
   id: '/api/ads/mine',
   path: '/api/ads/mine',
@@ -170,6 +176,7 @@ export interface FileRoutesByFullPath {
   '/passenger': typeof PassengerRoute
   '/signup': typeof SignupRoute
   '/api/ads/mine': typeof ApiAdsMineRoute
+  '/api/auditor/assign': typeof ApiAuditorAssignRoute
   '/api/auth/login': typeof ApiAuthLoginRoute
   '/api/auth/logout': typeof ApiAuthLogoutRoute
   '/api/auth/me': typeof ApiAuthMeRoute
@@ -197,6 +204,7 @@ export interface FileRoutesByTo {
   '/passenger': typeof PassengerRoute
   '/signup': typeof SignupRoute
   '/api/ads/mine': typeof ApiAdsMineRoute
+  '/api/auditor/assign': typeof ApiAuditorAssignRoute
   '/api/auth/login': typeof ApiAuthLoginRoute
   '/api/auth/logout': typeof ApiAuthLogoutRoute
   '/api/auth/me': typeof ApiAuthMeRoute
@@ -225,6 +233,7 @@ export interface FileRoutesById {
   '/passenger': typeof PassengerRoute
   '/signup': typeof SignupRoute
   '/api/ads/mine': typeof ApiAdsMineRoute
+  '/api/auditor/assign': typeof ApiAuditorAssignRoute
   '/api/auth/login': typeof ApiAuthLoginRoute
   '/api/auth/logout': typeof ApiAuthLogoutRoute
   '/api/auth/me': typeof ApiAuthMeRoute
@@ -254,6 +263,7 @@ export interface FileRouteTypes {
     | '/passenger'
     | '/signup'
     | '/api/ads/mine'
+    | '/api/auditor/assign'
     | '/api/auth/login'
     | '/api/auth/logout'
     | '/api/auth/me'
@@ -281,6 +291,7 @@ export interface FileRouteTypes {
     | '/passenger'
     | '/signup'
     | '/api/ads/mine'
+    | '/api/auditor/assign'
     | '/api/auth/login'
     | '/api/auth/logout'
     | '/api/auth/me'
@@ -308,6 +319,7 @@ export interface FileRouteTypes {
     | '/passenger'
     | '/signup'
     | '/api/ads/mine'
+    | '/api/auditor/assign'
     | '/api/auth/login'
     | '/api/auth/logout'
     | '/api/auth/me'
@@ -336,6 +348,7 @@ export interface RootRouteChildren {
   PassengerRoute: typeof PassengerRoute
   SignupRoute: typeof SignupRoute
   ApiAdsMineRoute: typeof ApiAdsMineRoute
+  ApiAuditorAssignRoute: typeof ApiAuditorAssignRoute
   ApiAuthLoginRoute: typeof ApiAuthLoginRoute
   ApiAuthLogoutRoute: typeof ApiAuthLogoutRoute
   ApiAuthMeRoute: typeof ApiAuthMeRoute
@@ -482,6 +495,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthLoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/auditor/assign': {
+      id: '/api/auditor/assign'
+      path: '/api/auditor/assign'
+      fullPath: '/api/auditor/assign'
+      preLoaderRoute: typeof ApiAuditorAssignRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/ads/mine': {
       id: '/api/ads/mine'
       path: '/api/ads/mine'
@@ -554,6 +574,7 @@ const rootRouteChildren: RootRouteChildren = {
   PassengerRoute: PassengerRoute,
   SignupRoute: SignupRoute,
   ApiAdsMineRoute: ApiAdsMineRoute,
+  ApiAuditorAssignRoute: ApiAuditorAssignRoute,
   ApiAuthLoginRoute: ApiAuthLoginRoute,
   ApiAuthLogoutRoute: ApiAuthLogoutRoute,
   ApiAuthMeRoute: ApiAuthMeRoute,

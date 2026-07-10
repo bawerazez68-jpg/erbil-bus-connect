@@ -16,6 +16,8 @@ export type User = {
   name: string;
   email: string;
   role: Role;
+  /** The route an auditor is checking today, if they've picked one; null/unused for other roles. */
+  assignedRouteId: string | null;
 };
 
 type AuthResult = { user: User; accessToken: string; expiresInSec: number };

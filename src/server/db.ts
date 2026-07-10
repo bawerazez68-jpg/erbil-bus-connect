@@ -178,6 +178,17 @@ db.exec(`
   );
 `);
 
+// `CREATE TABLE IF NOT EXISTS` above doesn't add columns to a users table
+// that already existed before this field was introduced, so add it here,
+// guarded so re-running on a fresh (already-migrated) DB is a no-op.
+const usersColumns = db
+  .prepare<{ name: string }, []>(`PRAGMA table_info(users)`)
+  .all()
+  .map((c) => c.name);
+if (!usersColumns.includes("assigned_route_id")) {
+  db.exec(`ALTER TABLE users ADD COLUMN assigned_route_id TEXT`);
+}
+
 export type UserRow = {
   id: string;
   name: string;
@@ -185,6 +196,7 @@ export type UserRow = {
   password_hash: string;
   role: Role;
   created_at: number;
+  assigned_route_id: string | null;
 };
 
 // All statements below use `?` placeholders bound at call time — never
@@ -198,6 +210,9 @@ const stmts = {
     `SELECT * FROM users WHERE email = ? COLLATE NOCASE`,
   ),
   findUserById: db.prepare<UserRow, [string]>(`SELECT * FROM users WHERE id = ?`),
+  setAssignedRoute: db.prepare(
+    `UPDATE users SET assigned_route_id = ? WHERE id = ? AND role = 'auditor'`,
+  ),
 
   insertRefreshToken: db.prepare(
     `INSERT INTO refresh_tokens (id, user_id, token_hash, expires_at, created_at) VALUES (?, ?, ?, ?, ?)`,
@@ -414,6 +429,11 @@ export function insertAvatarUpload(entry: {
 
 export function findAvatarUploadById(id: string) {
   return stmts.findAvatarUploadById.get(id);
+}
+
+/** Assigns the route an auditor is checking today. Scoped to role='auditor' in the WHERE clause so it can't be set on other roles. */
+export function setAssignedRoute(userId: string, routeId: string): boolean {
+  return stmts.setAssignedRoute.run(routeId, userId) > 0;
 }
 
 export function setRouteInterval(routeId: string, intervalMinutes: number, updatedBy: string) {

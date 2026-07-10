@@ -28,10 +28,28 @@ export class EmailAlreadyExistsError extends Error {
   }
 }
 
-export type PublicUser = { id: string; name: string; email: string; role: Role };
+export type PublicUser = {
+  id: string;
+  name: string;
+  email: string;
+  role: Role;
+  assignedRouteId: string | null;
+};
 
-function toPublicUser(row: { id: string; name: string; email: string; role: Role }): PublicUser {
-  return { id: row.id, name: row.name, email: row.email, role: row.role };
+function toPublicUser(row: {
+  id: string;
+  name: string;
+  email: string;
+  role: Role;
+  assigned_route_id?: string | null;
+}): PublicUser {
+  return {
+    id: row.id,
+    name: row.name,
+    email: row.email,
+    role: row.role,
+    assignedRouteId: row.assigned_route_id ?? null,
+  };
 }
 
 export async function createUser(input: {
@@ -47,7 +65,7 @@ export async function createUser(input: {
   const passwordHash = await hashPassword(input.password);
   const id = crypto.randomUUID();
   insertUser({ id, name: input.name, email: input.email, passwordHash, role: input.role });
-  return { id, name: input.name, email: input.email, role: input.role };
+  return { id, name: input.name, email: input.email, role: input.role, assignedRouteId: null };
 }
 
 /**

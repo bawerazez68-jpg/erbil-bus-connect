@@ -36,7 +36,19 @@ function AuditorPage() {
   const [focus, setFocus] = useState<string | null>(null);
   const [checkpoint, setCheckpoint] = useState<[number, number] | null>(null);
 
-  const [intervalRoute, setIntervalRoute] = useState(ROUTES[0]?.id ?? "");
+  // The route this auditor is checking today. Scopes the whole dashboard —
+  // an auditor only ever sees buses on their assigned route. Persisted
+  // server-side (users.assigned_route_id) so it survives across sessions.
+  const [assignedRoute, setAssignedRouteState] = useState<string | null>(
+    user?.assignedRouteId ?? null,
+  );
+  const [routeSaving, setRouteSaving] = useState(false);
+  const [routeError, setRouteError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (user?.assignedRouteId) setAssignedRouteState(user.assignedRouteId);
+  }, [user?.assignedRouteId]);
+
   const [intervalMinutes, setIntervalMinutes] = useState(15);
   const [intervalStatus, setIntervalStatus] = useState<string | null>(null);
 
@@ -46,9 +58,12 @@ function AuditorPage() {
   const [penaltyStatus, setPenaltyStatus] = useState<string | null>(null);
   const [penalties, setPenalties] = useState<Penalty[]>([]);
 
-  const open = alerts.filter((a) => a.status === "open");
+  const routeBuses = assignedRoute ? buses.filter((b) => b.routeId === assignedRoute) : [];
+  const myAlerts = assignedRoute ? alerts.filter((a) => a.routeId === assignedRoute) : [];
+  const open = myAlerts.filter((a) => a.status === "open");
   const onRoute =
-    buses.length - new Set(open.filter((a) => a.type === "deviation").map((a) => a.busId)).size;
+    routeBuses.length -
+    new Set(open.filter((a) => a.type === "deviation").map((a) => a.busId)).size;
   const integrity = Math.max(
     0,
     100 -
@@ -60,6 +75,26 @@ function AuditorPage() {
 
   const sevTone = (s: AuditAlert["severity"]) =>
     s === "high" ? "danger" : s === "medium" ? "warn" : "default";
+
+  const chooseRoute = async (routeId: string) => {
+    if (!accessToken) return;
+    setRouteSaving(true);
+    setRouteError(null);
+    try {
+      const res = await fetch("/api/auditor/assign", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
+        body: JSON.stringify({ routeId }),
+      });
+      const body = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(body?.error ?? "Failed to set route");
+      setAssignedRouteState(routeId);
+    } catch (err) {
+      setRouteError(err instanceof Error ? err.message : "Failed to set route");
+    } finally {
+      setRouteSaving(false);
+    }
+  };
 
   const loadPenalties = async () => {
     if (!accessToken) return;
@@ -78,13 +113,13 @@ function AuditorPage() {
   }, [accessToken]);
 
   const submitInterval = async () => {
-    if (!accessToken) return;
+    if (!accessToken || !assignedRoute) return;
     setIntervalStatus(null);
     try {
       const res = await fetch("/api/fleet/intervals", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
-        body: JSON.stringify({ routeId: intervalRoute, intervalMinutes }),
+        body: JSON.stringify({ routeId: assignedRoute, intervalMinutes }),
       });
       const body = await res.json().catch(() => null);
       if (!res.ok) throw new Error(body?.error ?? "Failed to set interval");
@@ -119,12 +154,45 @@ function AuditorPage() {
 
   if (isLoading || user?.role !== "auditor") return null;
 
+  if (!assignedRoute) {
+    return (
+      <AnimatedGradient theme="auditor">
+        <AppHeader />
+        <main className="px-4 sm:px-8 max-w-2xl mx-auto pb-12">
+          <GlassCard className="p-6 mt-6">
+            <h2 className="text-xl font-semibold">Select your route</h2>
+            <p className="mt-1 text-sm text-white/70">
+              Choose the route you're checking today — you'll only see buses on that route.
+            </p>
+            {routeError && <p className="mt-2 text-xs text-red-200">{routeError}</p>}
+            <div className="mt-4 grid sm:grid-cols-2 gap-3">
+              {ROUTES.map((r) => (
+                <button
+                  key={r.id}
+                  type="button"
+                  onClick={() => void chooseRoute(r.id)}
+                  disabled={routeSaving}
+                  className="flex items-center gap-2 p-3 rounded-xl bg-white/10 border border-white/20 hover:bg-white/20 text-start disabled:opacity-50"
+                >
+                  <span className="w-3 h-3 rounded-full" style={{ background: r.color }} />
+                  <span className="font-medium">{r.name}</span>
+                </button>
+              ))}
+            </div>
+          </GlassCard>
+        </main>
+      </AnimatedGradient>
+    );
+  }
+
+  const myRoute = ROUTES.find((r) => r.id === assignedRoute);
+
   return (
     <AnimatedGradient theme="auditor">
       <AppHeader />
       <main className="px-4 sm:px-8 max-w-7xl mx-auto pb-12">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <Stat label={t("onRoute")} value={`${onRoute}/${buses.length}`} />
+          <Stat label={t("onRoute")} value={`${onRoute}/${routeBuses.length}`} />
           <Stat label={t("flagged")} value={open.length} />
           <Stat
             label={t("ghostRider")}
@@ -133,16 +201,25 @@ function AuditorPage() {
           <Stat label={t("integrityScore")} value={`${integrity}%`} />
         </div>
 
-        <p className="mt-3 text-xs text-white/70">
-          Tap the map to set your checkpoint location and see each bus's ETA to you.
-        </p>
+        <div className="mt-3 flex items-center justify-between gap-3">
+          <p className="text-xs text-white/70">
+            Tap the map to set your checkpoint location and see each bus's ETA to you.
+          </p>
+          <button
+            type="button"
+            onClick={() => setAssignedRouteState(null)}
+            className="shrink-0 text-xs px-3 py-1.5 rounded-full bg-white/10 border border-white/20 hover:bg-white/20"
+          >
+            {myRoute?.name} · Change route
+          </button>
+        </div>
 
         <div className="mt-4 grid lg:grid-cols-3 gap-4">
           <GlassCard className="lg:col-span-2 p-2 h-[480px]">
             <MapView
               showPassengers
               highlightRouteId={focus}
-              liveBuses={buses}
+              liveBuses={routeBuses}
               myLocation={checkpoint}
               onSetMyLocation={setCheckpoint}
             />
@@ -156,7 +233,7 @@ function AuditorPage() {
             </div>
             <p className="text-xs text-white/70 mt-1">{t("auditDesc")}</p>
             <ul className="mt-3 space-y-3 max-h-[400px] overflow-auto">
-              {alerts.map((a) => {
+              {myAlerts.map((a) => {
                 const r = ROUTES.find((x) => x.id === a.routeId)!;
                 return (
                   <li
@@ -198,6 +275,9 @@ function AuditorPage() {
                   </li>
                 );
               })}
+              {myAlerts.length === 0 && (
+                <li className="text-sm text-white/60">No alerts on this route right now.</li>
+              )}
             </ul>
           </GlassCard>
         </div>
@@ -206,7 +286,7 @@ function AuditorPage() {
           <GlassCard className="p-4">
             <h2 className="text-lg font-semibold">Live fleet — gaps &amp; checkpoint ETA</h2>
             <ul className="mt-3 space-y-2 max-h-[340px] overflow-auto">
-              {buses.map((b) => {
+              {routeBuses.map((b) => {
                 const eta = checkpoint ? etaToPoint(b, checkpoint) : null;
                 return (
                   <li
@@ -234,18 +314,8 @@ function AuditorPage() {
           <div className="space-y-4">
             <GlassCard className="p-4">
               <h2 className="text-lg font-semibold">Set route interval</h2>
+              <p className="text-xs text-white/70 mt-1">For {myRoute?.name}</p>
               <div className="mt-3 flex flex-wrap gap-2 items-center">
-                <select
-                  value={intervalRoute}
-                  onChange={(e) => setIntervalRoute(e.target.value)}
-                  className="text-sm rounded-lg bg-white/10 border border-white/20 px-3 py-2 text-white"
-                >
-                  {ROUTES.map((r) => (
-                    <option key={r.id} value={r.id} className="text-slate-900">
-                      {r.name}
-                    </option>
-                  ))}
-                </select>
                 <input
                   type="number"
                   min={1}
@@ -276,7 +346,7 @@ function AuditorPage() {
                   <option value="" className="text-slate-900">
                     Select bus…
                   </option>
-                  {buses.map((b) => (
+                  {routeBuses.map((b) => (
                     <option key={b.id} value={b.id} className="text-slate-900">
                       {b.label} — {b.driverName}
                     </option>
@@ -330,9 +400,9 @@ function AuditorPage() {
           <GlassCard className="p-4">
             <h2 className="text-lg font-semibold">{t("auditTitle")}</h2>
             <ul className="mt-3 grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
-              {ROUTES.map((r) => {
-                const routeAlerts = open.filter((a) => a.routeId === r.id).length;
-                const score = Math.max(0, 100 - routeAlerts * 18);
+              {ROUTES.filter((r) => r.id === assignedRoute).map((r) => {
+                const routeAlertCount = open.filter((a) => a.routeId === r.id).length;
+                const score = Math.max(0, 100 - routeAlertCount * 18);
                 return (
                   <li key={r.id} className="p-3 rounded-xl bg-white/10 border border-white/20">
                     <div className="flex items-center justify-between">
@@ -340,8 +410,8 @@ function AuditorPage() {
                         <span className="w-2 h-2 rounded-full" style={{ background: r.color }} />
                         {r.name}
                       </span>
-                      <Badge tone={routeAlerts ? "warn" : "success"}>
-                        {routeAlerts ? `${routeAlerts}` : t("onRoute")}
+                      <Badge tone={routeAlertCount ? "warn" : "success"}>
+                        {routeAlertCount ? `${routeAlertCount}` : t("onRoute")}
                       </Badge>
                     </div>
                     <div className="mt-2">
