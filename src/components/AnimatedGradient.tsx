@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-type Theme = "passenger" | "owner" | "advertiser" | "auditor" | "brand";
+type Theme = "passenger" | "owner" | "advertiser" | "auditor" | "brand" | "auth";
 
 const themes: Record<Theme, string> = {
   passenger: "from-emerald-600 via-teal-600 to-cyan-800",
@@ -8,6 +8,8 @@ const themes: Record<Theme, string> = {
   owner: "from-emerald-600 via-teal-600 to-cyan-800",
   auditor: "from-emerald-600 via-teal-600 to-cyan-800",
   brand: "from-indigo-800 via-violet-800 to-fuchsia-800",
+  // Lighter green used only on the login/signup pages.
+  auth: "from-emerald-500 via-teal-400 to-green-500",
 };
 
 export function AnimatedGradient({

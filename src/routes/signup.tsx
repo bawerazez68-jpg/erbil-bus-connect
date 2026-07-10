@@ -39,7 +39,7 @@ function SignupPage() {
   };
 
   return (
-    <AnimatedGradient theme={role}>
+    <AnimatedGradient theme="auth">
       <AppHeader />
       <main className="px-4 max-w-md mx-auto pt-8 pb-16">
         <GlassCard className="p-6">
