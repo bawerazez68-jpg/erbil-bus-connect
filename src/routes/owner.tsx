@@ -75,7 +75,7 @@ function OwnerPage() {
             <GlassCard className="p-4">
               <div className="flex items-center justify-between">
                 <h2 className="text-lg font-semibold">{t("fleet")}</h2>
-                <button className="text-xs px-3 py-1.5 rounded-full bg-white text-violet-900 font-semibold">
+                <button className="text-xs px-3 py-1.5 rounded-full bg-white text-emerald-800 font-semibold">
                   + {t("addBus")}
                 </button>
               </div>
@@ -96,7 +96,7 @@ function OwnerPage() {
                         {r.name} · {b.driverName}
                       </div>
                       <div className="mt-2">
-                        <Progress value={pct} color="bg-violet-300" />
+                        <Progress value={pct} color="bg-emerald-300" />
                         <div className="mt-1 text-xs text-white/70">
                           {b.taken}/{b.seats} {t("seats")} · {Math.round(b.etaToGarageMin)}{" "}
                           {t("min")} to garage

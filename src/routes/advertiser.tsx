@@ -66,7 +66,7 @@ function AdvertiserPage() {
           <GlassCard className="p-4">
             <div className="flex justify-between items-center">
               <h2 className="text-lg font-semibold">{t("campaigns")}</h2>
-              <button className="text-xs px-3 py-1.5 rounded-full bg-white text-violet-900 font-semibold">
+              <button className="text-xs px-3 py-1.5 rounded-full bg-white text-emerald-800 font-semibold">
                 + {t("newCampaign")}
               </button>
             </div>
@@ -90,7 +90,7 @@ function AdvertiserPage() {
                       </div>
                     </div>
                     <div className="mt-2">
-                      <Progress value={pct} color="bg-fuchsia-300" />
+                      <Progress value={pct} color="bg-teal-300" />
                       <div className="mt-1 text-xs text-white/70">
                         ${c.spent} / ${c.budget}
                       </div>
@@ -127,7 +127,7 @@ function AdvertiserPage() {
             <button
               onClick={() => void submitAd()}
               disabled={!title.trim() || !body.trim() || posting}
-              className="mt-3 w-full py-2 rounded-lg bg-white text-violet-900 font-semibold text-sm disabled:opacity-50"
+              className="mt-3 w-full py-2 rounded-lg bg-white text-emerald-800 font-semibold text-sm disabled:opacity-50"
             >
               {posting ? "Posting…" : "Share ad"}
             </button>
