@@ -8,8 +8,9 @@ const themes: Record<Theme, string> = {
   owner: "from-emerald-600 via-teal-600 to-cyan-800",
   auditor: "from-emerald-600 via-teal-600 to-cyan-800",
   brand: "from-indigo-800 via-violet-800 to-fuchsia-800",
-  // Lighter green used only on the login/signup pages.
-  auth: "from-emerald-500 via-teal-400 to-green-500",
+  // A muted green used only on the login/signup pages — distinct from the
+  // dashboards' teal but deliberately not bright.
+  auth: "from-green-800 via-emerald-700 to-teal-800",
 };
 
 export function AnimatedGradient({
