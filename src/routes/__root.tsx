@@ -78,16 +78,30 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   head: () => ({
     meta: [
       { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { name: "theme-color", content: "#4c1d95" },
+      { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
+      { name: "theme-color", content: "#0d9488" },
       { title: "Bbina — Smart bus tracking for Erbil" },
-      { name: "description", content: "Bbina lets passengers, bus owners and advertisers track Erbil's 7 bus routes in real time on a 3D map." },
+      {
+        name: "description",
+        content:
+          "Bbina lets passengers, bus owners and advertisers track Erbil's 7 bus routes in real time on a 3D map.",
+      },
       { name: "author", content: "Bbina" },
       { property: "og:title", content: "Bbina — Smart bus tracking for Erbil" },
-      { property: "og:description", content: "Live 3D bus tracking across Erbil for passengers, owners and advertisers." },
+      {
+        property: "og:description",
+        content: "Live 3D bus tracking across Erbil for passengers, owners and advertisers.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Bbina" },
+      // Installable-app support on both platforms: Android/Chrome reads the
+      // manifest below directly, but iOS Safari ignores it for home-screen
+      // behavior and needs these explicit apple-* tags instead.
+      { name: "mobile-web-app-capable", content: "yes" },
+      { name: "apple-mobile-web-app-capable", content: "yes" },
+      { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
+      { name: "apple-mobile-web-app-title", content: "Bbina" },
     ],
     links: [
       {
@@ -95,6 +109,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         href: appCss,
       },
       { rel: "manifest", href: "/manifest.webmanifest" },
+      { rel: "icon", type: "image/png", href: "/favicon.png" },
+      { rel: "apple-touch-icon", href: "/apple-touch-icon.png" },
     ],
   }),
   shellComponent: RootShell,
@@ -119,6 +135,12 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+
+  useEffect(() => {
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js").catch(() => {});
+    }
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>
