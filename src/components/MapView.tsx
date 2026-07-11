@@ -5,6 +5,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { getMapTilerKey } from "@/lib/maptiler.functions";
 import { BUSES, DOWNTOWN_GARAGE, PASSENGERS, ROUTES, interpolate } from "@/lib/mockData";
 import type { LiveBus } from "@/lib/useLiveFleet";
+import { MapEtaOverlay } from "./MapEtaOverlay";
 
 type Props = {
   showPassengers?: boolean;
@@ -17,6 +18,8 @@ type Props = {
   myLocation?: [number, number] | null;
   /** Called with [lng, lat] when the map is clicked, so a page can let the user place myLocation. */
   onSetMyLocation?: (lngLat: [number, number]) => void;
+  /** Waze-style arrival time + distance card floated over the bottom of the map. */
+  etaOverlay?: { etaMin: number; distanceKm: number; label?: string } | null;
 };
 
 export function MapView({
@@ -26,6 +29,7 @@ export function MapView({
   onSelectBus,
   myLocation = null,
   onSetMyLocation,
+  etaOverlay = null,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MlMap | null>(null);
@@ -303,6 +307,15 @@ export function MapView({
   }, []);
 
   return (
-    <div ref={containerRef} className="w-full h-full min-h-[400px] rounded-2xl overflow-hidden" />
+    <div className="relative w-full h-full min-h-[400px]">
+      <div ref={containerRef} className="w-full h-full rounded-2xl overflow-hidden" />
+      {etaOverlay && (
+        <MapEtaOverlay
+          etaMin={etaOverlay.etaMin}
+          distanceKm={etaOverlay.distanceKm}
+          label={etaOverlay.label}
+        />
+      )}
+    </div>
   );
 }

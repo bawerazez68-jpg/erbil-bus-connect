@@ -61,7 +61,7 @@ export function BusDetailPanel({
   };
 
   const etaToMe = myLocation ? etaToPoint(bus, myLocation) : null;
-  const etaToDestination = { distanceKm: 0, etaMin: bus.etaToGarageMin };
+  const etaToDestination = { distanceKm: bus.remainingKm, etaMin: bus.etaToGarageMin };
 
   return (
     <GlassCard className="p-4">
@@ -95,6 +95,9 @@ export function BusDetailPanel({
         <div className="p-2 rounded-lg bg-white/10">
           <div className="text-[10px] uppercase text-white/60">ETA to destination</div>
           <div className="font-semibold">{Math.round(etaToDestination.etaMin)} min</div>
+          <div className="text-[10px] text-white/60">
+            {etaToDestination.distanceKm.toFixed(1)} km
+          </div>
         </div>
         <div className="p-2 rounded-lg bg-white/10">
           <div className="text-[10px] uppercase text-white/60">ETA to me</div>

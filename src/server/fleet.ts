@@ -29,6 +29,7 @@ export type LiveBusView = BusLive & {
   gapAheadKm: number | null;
   gapAheadMin: number | null;
   etaToGarageMin: number;
+  remainingKm: number;
 };
 
 const TICK_MS = 2000;
@@ -127,7 +128,7 @@ export function getLiveFleet(): LiveBusView[] {
       }
       const remainingKm = routeLengthKm(bus.routeId) * (1 - bus.progress);
       const etaToGarageMin = (remainingKm / (bus.speedKmh > 1 ? bus.speedKmh : 1)) * 60;
-      result.push({ ...bus, gapAheadKm, gapAheadMin, etaToGarageMin });
+      result.push({ ...bus, gapAheadKm, gapAheadMin, etaToGarageMin, remainingKm });
     });
   }
   // numeric: true so "B-0-2" sorts before "B-0-10" (plain string compare

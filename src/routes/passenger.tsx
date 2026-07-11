@@ -60,6 +60,15 @@ function PassengerPage() {
                 const bus = buses.find((b) => b.id === id);
                 if (bus) setSelectedRoute(bus.routeId);
               }}
+              etaOverlay={
+                selectedBus
+                  ? {
+                      etaMin: selectedBus.etaToGarageMin,
+                      distanceKm: selectedBus.remainingKm,
+                      label: ROUTES.find((r) => r.id === selectedBus.routeId)?.name,
+                    }
+                  : null
+              }
             />
           </GlassCard>
           <div className="space-y-4 max-h-[520px] overflow-auto">

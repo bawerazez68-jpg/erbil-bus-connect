@@ -18,6 +18,7 @@ export type LiveBus = {
   gapAheadKm: number | null;
   gapAheadMin: number | null;
   etaToGarageMin: number;
+  remainingKm: number;
 };
 
 export type RouteInterval = { routeId: string; intervalMinutes: number };
